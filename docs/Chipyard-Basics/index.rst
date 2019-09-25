@@ -21,4 +21,5 @@ Hit next to get started!
    Configs-Parameters-Mixins
    Initial-Repo-Setup
    Running-A-Simulation
+   Debugging-RTL
    Building-A-Chip
