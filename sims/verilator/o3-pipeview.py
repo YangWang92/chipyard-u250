@@ -170,7 +170,7 @@ def print_insts(outfile, cycle_time, width, color, timestamps, store_completions
         print_inst(outfile,  print_item, cycle_time, width, color, timestamps, store_completions)
 # Prints a single instruction
 def print_inst(outfile, inst, cycle_time, width, color, timestamps, store_completions):
-    color_names = "Black Red Green Yellow Blue Magenta Cyan".split()
+    color_names = "Black Red Green Yellow Blue Magenta Cyan Brown Lightgray".split()
     capability_map = {
         'Bold': 'bold',
         'Dim': 'dim',
@@ -211,6 +211,12 @@ def print_inst(outfile, inst, cycle_time, width, color, timestamps, store_comple
               {'name': 'rename',
                'color': termcap.Magenta + termcap.Reverse,
                'shorthand': 'n'},
+              {'name': 'a_queue',
+               'color': termcap.Lightgray + termcap.Reverse,#rename is covered anyway
+               'shorthand': 'a'},
+              {'name': 'b_queue',
+               'color': termcap.Brown + termcap.Reverse,
+               'shorthand': 'b'},
               {'name': 'dispatch',
                'color': termcap.Green + termcap.Reverse,
                'shorthand': 'p'},
@@ -234,7 +240,7 @@ def print_inst(outfile, inst, cycle_time, width, color, timestamps, store_comple
     base_tick = (inst['fetch'] / time_width) * time_width
     # Find out the time of the last event - it may not
     # be 'retire' if the instruction is not comlpeted.
-    last_event_time = max(inst['fetch'], inst['decode'],inst['rename'],
+    last_event_time = max(inst['fetch'], inst['decode'],inst['rename'],inst['a_queue'],
                       inst['dispatch'],inst['issue'], inst['complete'], inst['retire'])
     if store_completions:
         last_event_time = max(last_event_time, inst['store'])

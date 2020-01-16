@@ -61,8 +61,8 @@ def writeOutput(line, idx):
 # If its cycle matches the previous event, we supress the print.
 def writeOutputDecode(line, idx):
     cycle = int(line[idx+2+19:])
-#    debug_cycle = int(line[idx+2:].split(':')[2])
-#    assert cycle==debug_cycle
+    #    debug_cycle = int(line[idx+2:].split(':')[2])
+    #    assert cycle==debug_cycle
     print line[idx+2:],
     return cycle
 
@@ -71,8 +71,8 @@ def writeOutputDecode(line, idx):
 # If its cycle matches the previous event, we supress the print.
 def writeOutputRename(line, idx, prev_cycle):
     cycle = int(line[idx+2+19:])
-#    debug_cycle = int(line[idx+2:].split(':')[2])
-#    assert cycle==debug_cycle
+    #    debug_cycle = int(line[idx+2:].split(':')[2])
+    #    assert cycle==debug_cycle
     if cycle == prev_cycle:
         print "O3PipeView:rename: 0"
     else:
@@ -84,8 +84,8 @@ def writeOutputRename(line, idx, prev_cycle):
 # If its cycle matches the previous event, we supress the print.
 def writeOutputDispatch(line, idx, prev_cycle):
     cycle = int(line[idx+2+21:])
-#    debug_cycle = int(line[idx+2:].split(':')[2])
-#    assert cycle==debug_cycle
+    #    debug_cycle = int(line[idx+2:].split(':')[2])
+    #    assert cycle==debug_cycle
     if cycle == prev_cycle:
         print "O3PipeView:dispatch: 0"
     else:
@@ -117,12 +117,12 @@ def findAndPrintEvent(target_id, lst, stage_str, idx):
 
 def isStore(line):
     if "sw " in line or \
-       "sd " in line or \
-       "sh " in line or \
-       "sb " in line or \
-       "amo" in line or \
-       "sc." in line or \
-       "lr." in line:  # TODO remove lr from using store-completions.
+            "sd " in line or \
+            "sh " in line or \
+            "sb " in line or \
+            "amo" in line or \
+            "sc." in line or \
+            "lr." in line:  # TODO remove lr from using store-completions.
         return True
     else:
         return False
@@ -146,8 +146,10 @@ def generate_pipeview_file(log):
     q_if  = deque()
     q_dec = deque()
     q_ren = deque()
-    q_dis = deque()
     # out-of-order stages must use lists
+    l_a = []
+    l_b = []
+    l_dis = []
     l_iss = []
     l_wb  = []
 
@@ -168,8 +170,12 @@ def generate_pipeview_file(log):
             q_dec.append(line)
         elif "rename" in line:
             q_ren.append(line)
+        elif "a_queue" in line:
+            l_a.append(line)
+        elif "b_queue" in line:
+            l_b.append(line)
         elif "dispatch" in line:
-            q_dis.append(line)
+            l_dis.append(line)
         elif "issue" in line:
             l_iss.append(line)
         elif "complete" in line:
@@ -189,7 +195,9 @@ def generate_pipeview_file(log):
                     last_fseq = fetch_id
                     c = writeOutputDecode(q_dec.popleft(), idx)
                     c = writeOutputRename(q_ren.popleft(), idx, c)
-                    writeOutputDispatch(q_dis.popleft(), idx, c)
+                    findAndPrintEvent(fetch_id, l_a, "a_queue", idx)
+                    findAndPrintEvent(fetch_id, l_b, "b_queue", idx)
+                    findAndPrintEvent(fetch_id, l_dis, "dispatch", idx)
                     findAndPrintEvent(fetch_id, l_iss, "issue", idx)
                     findAndPrintEvent(fetch_id, l_wb, "complete", idx)
                     # if isStore(fetch):
@@ -209,23 +217,18 @@ def generate_pipeview_file(log):
                         c = writeOutputRename(q_ren.popleft(), idx, c)
                     else:
                         print "O3PipeView:rename: 0"
-                    if q_dis and fetch_id == getFSeqNum(q_dis[0], idx):
-                        writeOutputDispatch(q_dis.popleft(), idx, c)
-                        findAndPrintEvent(fetch_id, l_iss, "issue", idx)
-                        findAndPrintEvent(fetch_id, l_wb, "complete", idx)
-                    else:
-                        print "O3PipeView:dispatch: 0"
-                        assert not findAndPrintEvent(fetch_id, l_iss, "issue", idx), \
-                            "Found issue time stamp with no corresponding decode"
-                        assert not findAndPrintEvent(fetch_id, l_wb, "complete", idx), \
-                            "Found time stamp with no corresponding decode"
+                    findAndPrintEvent(fetch_id, l_a, "a_queue", idx)
+                    findAndPrintEvent(fetch_id, l_b, "b_queue", idx)
+                    findAndPrintEvent(fetch_id, l_dis, "dispatch", idx)
+                    findAndPrintEvent(fetch_id, l_iss, "issue", idx)
+                    print "O3PipeView:complete: 0"
                     print "O3PipeView:retire: 0:store: 0"
 
 
 def main():
     parser = optparse.OptionParser()
     parser.add_option('-f','--file', dest='infile',
-        help='The input *.out file to parse.', default="")
+                      help='The input *.out file to parse.', default="")
 
     (options, args) = parser.parse_args()
 
