@@ -16,6 +16,14 @@ class SmallBoomConfig extends Config(
   new boom.common.WithNBoomCores(1) ++                      // single-core
   new freechips.rocketchip.system.BaseConfig)               // "base" rocketchip system
 
+class SliceBoomConfig extends Config(
+  new WithTop ++                                            // use normal top
+  new WithBootROM ++                                        // use testchipip bootrom
+  new freechips.rocketchip.subsystem.WithInclusiveCache ++  // use SiFive L2 cache
+  new boom.common.WithSliceBooms ++                         // 1-wide BOOM
+  new boom.common.WithNBoomCores(1) ++                      // single-core
+  new freechips.rocketchip.system.BaseConfig)               // "base" rocketchip system
+
 class MediumBoomConfig extends Config(
   new WithTop ++
   new WithBootROM ++
