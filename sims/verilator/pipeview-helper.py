@@ -195,8 +195,10 @@ def generate_pipeview_file(log):
                     last_fseq = fetch_id
                     c = writeOutputDecode(q_dec.popleft(), idx)
                     c = writeOutputRename(q_ren.popleft(), idx, c)
-                    findAndPrintEvent(fetch_id, l_a, "a_queue", idx)
-                    findAndPrintEvent(fetch_id, l_b, "b_queue", idx)
+                    if not findAndPrintEvent(fetch_id, l_a, "a_queue", idx):#allow only one of the two queues
+                        findAndPrintEvent(fetch_id, l_b, "b_queue", idx)
+                    else:
+                        print "O3PipeView:b_queue: 0"
                     findAndPrintEvent(fetch_id, l_dis, "dispatch", idx)
                     findAndPrintEvent(fetch_id, l_iss, "issue", idx)
                     findAndPrintEvent(fetch_id, l_wb, "complete", idx)
@@ -217,8 +219,10 @@ def generate_pipeview_file(log):
                         c = writeOutputRename(q_ren.popleft(), idx, c)
                     else:
                         print "O3PipeView:rename: 0"
-                    findAndPrintEvent(fetch_id, l_a, "a_queue", idx)
-                    findAndPrintEvent(fetch_id, l_b, "b_queue", idx)
+                    if not findAndPrintEvent(fetch_id, l_a, "a_queue", idx):#allow only one of the two queues
+                        findAndPrintEvent(fetch_id, l_b, "b_queue", idx)
+                    else:
+                        print "O3PipeView:b_queue: 0"
                     findAndPrintEvent(fetch_id, l_dis, "dispatch", idx)
                     findAndPrintEvent(fetch_id, l_iss, "issue", idx)
                     print "O3PipeView:complete: 0"
