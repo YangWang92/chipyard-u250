@@ -52,81 +52,6 @@ from collections import deque
 def getFSeqNum(line, idx):
     return int(line[0:idx])
 
-# remove the fseq number and print the line.
-def writeOutput(line, idx):
-    print line[idx+2:],
-
-# remove the fseq number and print the line.
-# Also finds and returns which cycle this event occurred.
-# If its cycle matches the previous event, we supress the print.
-def writeOutputDecode(line, idx):
-    cycle = int(line[idx+2+19:])
-    #    debug_cycle = int(line[idx+2:].split(':')[2])
-    #    assert cycle==debug_cycle
-    print line[idx+2:],
-    return cycle
-
-# remove the fseq number and print the line.
-# Also finds and returns which cycle this event occurred.
-# If its cycle matches the previous event, we supress the print.
-def writeOutputRename(line, idx, prev_cycle):
-    cycle = int(line[idx+2+19:])
-    #    debug_cycle = int(line[idx+2:].split(':')[2])
-    #    assert cycle==debug_cycle
-    if cycle == prev_cycle:
-        print "O3PipeView:rename: 0"
-    else:
-        print line[idx+2:],
-    return cycle
-
-# remove the fseq number and print the line.
-# Also finds and returns which cycle this event occurred.
-# If its cycle matches the previous event, we supress the print.
-def writeOutputDispatch(line, idx, prev_cycle):
-    cycle = int(line[idx+2+21:])
-    #    debug_cycle = int(line[idx+2:].split(':')[2])
-    #    assert cycle==debug_cycle
-    if cycle == prev_cycle:
-        print "O3PipeView:dispatch: 0"
-    else:
-        print line[idx+2:],
-
-# re-create the proper output from the retire message and
-# the store-comp message
-def writeRetireStoreOutput(ret_line, st_line, r_id, idx, s_idx):
-    s_id = getFSeqNum(st_line, idx)
-    if r_id != s_id:
-        print "FAILURE:"
-        print ret_line
-        print st_line
-    assert r_id == s_id, "wrong store entry!"
-    s_tsc = st_line[s_idx+1:]
-    end_idx = ret_line.rfind(':')
-    print ret_line[idx+2:end_idx+1], s_tsc,
-
-# return True if the event was found
-# otherwise return False (the instruction was misspeculated)
-def findAndPrintEvent(target_id, lst, stage_str, idx):
-    for i in range(len(lst)):
-        temp_id = getFSeqNum(lst[i], idx)
-        if temp_id == target_id:
-            writeOutput(lst.pop(i), idx)
-            return True
-    print "O3PipeView:%s"": 0" % (stage_str)
-    return False
-
-def isStore(line):
-    if "sw " in line or \
-            "sd " in line or \
-            "sh " in line or \
-            "sb " in line or \
-            "amo" in line or \
-            "sc." in line or \
-            "lr." in line:  # TODO remove lr from using store-completions.
-        return True
-    else:
-        return False
-
 
 def generate_pipeview_file(log):
     lines = log.readlines()
@@ -142,91 +67,38 @@ def generate_pipeview_file(log):
         else:
             lines.pop(0)
 
-    # in-order stages get to use queues
-    q_if  = deque()
-    q_dec = deque()
-    q_ren = deque()
-    # out-of-order stages must use lists
-    l_a = []
-    l_b = []
-    l_dis = []
-    l_iss = []
-    l_wb  = []
-
-
-    # run over the entire list once to get the store completions,
-    # as they occur after the store retires and thus don't fit neatly
-    # into our for loop below
-    l_stc = [line for line in lines if "store-comp" in line]
-    # cache the s_idx value (if there are any stores in program)
-    if l_stc: s_idx = l_stc.values()[0].find(':')
-
-    last_fseq = -1
-
+    seq_dict = {}
     for line in lines:
-        if "fetch" in line:
-            q_if.append(line)
-        elif "decode" in line:
-            q_dec.append(line)
-        elif "rename" in line:
-            q_ren.append(line)
-        elif "a_queue" in line:
-            l_a.append(line)
-        elif "b_queue" in line:
-            l_b.append(line)
-        elif "dispatch" in line:
-            l_dis.append(line)
-        elif "issue" in line:
-            l_iss.append(line)
-        elif "complete" in line:
-            l_wb.append(line)
-        elif "retire" in line:
-            r_id = getFSeqNum(line, idx)
-            while q_if:
-                fetch_id = getFSeqNum(q_if[0], idx)
-                if fetch_id > r_id:
-                    break
-                elif fetch_id == r_id:
-                    # print out this instruction's stages and retire it
-                    # (they'll be the head of all of the in-order queues)
-                    fetch = q_if.popleft()
-                    writeOutput(fetch, idx)
-                    assert fetch_id != last_fseq, "Found duplicate fseq number."
-                    last_fseq = fetch_id
-                    c = writeOutputDecode(q_dec.popleft(), idx)
-                    c = writeOutputRename(q_ren.popleft(), idx, c)
-                    if not findAndPrintEvent(fetch_id, l_a, "a_queue", idx):#allow only one of the two queues
-                        findAndPrintEvent(fetch_id, l_b, "b_queue", idx)
-                    else:
-                        print "O3PipeView:b_queue: 0"
-                    findAndPrintEvent(fetch_id, l_dis, "dispatch", idx)
-                    findAndPrintEvent(fetch_id, l_iss, "issue", idx)
-                    findAndPrintEvent(fetch_id, l_wb, "complete", idx)
-                    # if isStore(fetch):
-                    #     writeRetireStoreOutput(line, l_stc.pop(0), r_id, idx, s_idx)
-                    # else:
-                    writeOutput(line, idx)
-                    break
+        if ";" not in line:
+            continue
+        seq = getFSeqNum(line, idx)
+        o3_type = line.split(":")[1]
+        seq_dict.setdefault(seq, {})[o3_type] = line
+    for s in sorted(seq_dict.keys()):
+        d = seq_dict[s]
+        fetch_id = s
+        prev_cycle = 0
+        for stage in [
+            "fetch",
+            "decode",
+            "rename",
+            "a_queue",
+            "b_queue",
+            "dispatch",
+            "issue",
+            "complete",
+            "retire",
+        ]:
+            if stage in d:
+                line = d[stage]
+                cycle = int(line.split(":")[2])
+                if(cycle==prev_cycle): # skip instructions in same cycle
+                    print "O3PipeView:"+stage+": 0"
                 else:
-                    # print out misspeculated instruction
-                    writeOutput(q_if.popleft(), idx)
-                    c = 0
-                    if q_dec and fetch_id == getFSeqNum(q_dec[0], idx):
-                        c = writeOutputDecode(q_dec.popleft(), idx)
-                    else:
-                        print "O3PipeView:decode: 0"
-                    if q_ren and fetch_id == getFSeqNum(q_ren[0], idx):
-                        c = writeOutputRename(q_ren.popleft(), idx, c)
-                    else:
-                        print "O3PipeView:rename: 0"
-                    if not findAndPrintEvent(fetch_id, l_a, "a_queue", idx):#allow only one of the two queues
-                        findAndPrintEvent(fetch_id, l_b, "b_queue", idx)
-                    else:
-                        print "O3PipeView:b_queue: 0"
-                    findAndPrintEvent(fetch_id, l_dis, "dispatch", idx)
-                    findAndPrintEvent(fetch_id, l_iss, "issue", idx)
-                    print "O3PipeView:complete: 0"
-                    print "O3PipeView:retire: 0:store: 0"
+                    print line[idx+2:]
+                prev_cycle = cycle
+            else:
+                print "O3PipeView:"+stage+": 0"
 
 
 def main():

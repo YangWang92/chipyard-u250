@@ -271,7 +271,7 @@ def print_inst(outfile, inst, cycle_time, width, color, timestamps, store_comple
         outfile.write('[')
         pos = 0
         if num_lines == 1 and events[0][2] != 0:  # event is not fetch
-            curr_color = stages[events[0][2] - 1]['color']
+            curr_color = stages[events[-1][2]]['color']
         for event in events:
             if (stages[event[2]]['name'] == 'dispatch' and
                 inst['dispatch'] == inst['issue']):
@@ -285,7 +285,10 @@ def print_inst(outfile, inst, cycle_time, width, color, timestamps, store_comple
                 curr_color = termcap.Normal
             pos = (event[0] / cycle_time) + 1
         outfile.write(curr_color + dot * (width - pos) + termcap.Normal +
-                      ']-(' + str(base_tick + i * time_width).rjust(15) + ') ')
+                      ']-(' + str(
+            # base_tick + i * time_width
+            inst['fetch'] # use fetch start time instead
+        ).rjust(15) + ') ')
         if i == 0:
             outfile.write('%s.%s %s [%s]' % (
                     inst['pc'].rjust(10),
@@ -334,7 +337,7 @@ def main():
         help="enable colored output (default: '%default')")
     parser.add_option(
         '-c', '--cycle-time',
-        type='int', default=1000,
+        type='int', default=2,
         help="CPU cycle time in ticks (default: '%default')")
     parser.add_option(
         '--timestamps',
