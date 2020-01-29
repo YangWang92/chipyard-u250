@@ -26,7 +26,6 @@ class SliceBoomConfig extends Config(
   new WithBootROM ++                                        // use testchipip bootrom
   new WithUART ++                                           // add a UART
   new freechips.rocketchip.subsystem.WithNoMMIOPort ++      // no top-level mmio master port (overrides default set in rocketchip)
-  new freechips.rocketchip.subsystem.WithNoSlavePort ++     // no top-level mmio slave port (overrides default set in rocketchip)
   new freechips.rocketchip.subsystem.WithInclusiveCache ++  // use SiFive L2 cache
   new boom.common.WithSliceBooms ++                         // 1-wide BOOM
   new boom.common.WithNBoomCores(1) ++                      // single-core
