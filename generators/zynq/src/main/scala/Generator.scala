@@ -1,6 +1,8 @@
 package zynq
 
-object Generator extends testchipip.GeneratorApp {
+import freechips.rocketchip.util.GeneratorApp
+
+object Generator extends GeneratorApp {
   override lazy val longName = names.topModuleClass + "." + names.configs
   generateFirrtl
   generateAnno

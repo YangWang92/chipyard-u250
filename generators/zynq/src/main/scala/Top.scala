@@ -1,12 +1,13 @@
 package zynq
 
 import chisel3._
-import freechips.rocketchip.config.{Parameters, Field}
+import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util.DontTouch
 import testchipip._
+import utilities.{Subsystem, SubsystemModuleImp}
 
 case object ZynqAdapterBase extends Field[BigInt]
 
@@ -25,8 +26,8 @@ class Top(implicit val p: Parameters) extends Module {
 
   io.mem_axi <> target.mem_axi4.head
   adapter.axi <> io.ps_axi_slave
-  adapter.io.serial <> target.serial
-  adapter.io.bdev <> target.bdev
+  adapter.io.serial <> target.serial.get
+  adapter.io.bdev <> target.bdev.get
 
   target.debug := DontCare
   target.tieOffInterrupts()
@@ -34,23 +35,23 @@ class Top(implicit val p: Parameters) extends Module {
   target.reset := adapter.io.sys_reset
 }
 
-class FPGAZynqTop(implicit p: Parameters) extends RocketSubsystem
+class FPGAZynqTop(implicit p: Parameters) extends Subsystem
     with CanHaveMasterAXI4MemPort
 //    with HasSystemErrorSlave
     with HasPeripheryBootROM
     with HasSyncExtInterrupts
     with HasNoDebug
-    with HasPeripherySerial
-    with HasPeripheryBlockDevice {
+    with CanHavePeripherySerial
+    with CanHavePeripheryBlockDevice {
   override lazy val module = new FPGAZynqTopModule(this)
 }
 
-class FPGAZynqTopModule(outer: FPGAZynqTop) extends RocketSubsystemModuleImp(outer)
+class FPGAZynqTopModule(outer: FPGAZynqTop) extends SubsystemModuleImp(outer)
     with HasRTCModuleImp
     with CanHaveMasterAXI4MemPortModuleImp
     with HasPeripheryBootROMModuleImp
     with HasExtInterruptsModuleImp
     with HasNoDebugModuleImp
-    with HasPeripherySerialModuleImp
-    with HasPeripheryBlockDeviceModuleImp
+    with CanHavePeripherySerialModuleImp
+    with CanHavePeripheryBlockDeviceModuleImp
     with DontTouch

@@ -24,8 +24,8 @@ class TestHarness(implicit val p: Parameters) extends Module {
   dut.dontTouchPorts()
   dut.connectSimAXIMem()
 
-  driver.io.serial <> dut.serial
-  driver.io.bdev <> dut.bdev
+  driver.io.serial <> dut.serial.get
+  driver.io.bdev <> dut.bdev.get
   io.success := driver.io.success
 }
 

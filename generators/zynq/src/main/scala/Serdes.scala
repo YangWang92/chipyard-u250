@@ -70,8 +70,8 @@ class BlockDeviceSerdes(w: Int)(implicit p: Parameters)
   io.bdev.resp.bits := resp
   io.bdev.info := DontCare
 
-  val req_vec = Vec(Cat(req.tag, req.write), req.offset, req.len)
-  val data_vec = Vec(data.tag +: Seq.tabulate(dataBitsPerBeat/w) {
+  val req_vec = VecInit(Cat(req.tag, req.write), req.offset, req.len)
+  val data_vec = VecInit(data.tag +: Seq.tabulate(dataBitsPerBeat/w) {
     i => data.data((i + 1) * w - 1, i * w)
   })
 
@@ -151,7 +151,7 @@ class BlockDeviceDesser(w: Int)(implicit p: Parameters) extends BlockDeviceModul
   io.bdev.data.bits := data
   io.bdev.resp.ready := !resp_send
 
-  val resp_vec = Vec(resp.tag +: Seq.tabulate(dataBitsPerBeat/w) {
+  val resp_vec = VecInit(resp.tag +: Seq.tabulate(dataBitsPerBeat/w) {
     i => resp.data((i + 1) * w - 1, i * w)
   })
 
