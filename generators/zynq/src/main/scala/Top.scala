@@ -29,7 +29,7 @@ class Top(implicit val p: Parameters) extends Module {
   adapter.io.serial <> target.serial.get
   adapter.io.bdev <> target.bdev.get
 
-  target.debug := DontCare
+  target.debug.map(_ := DontCare) //TODO: figure out if we need this! - probably not due to NoDebug
   target.tieOffInterrupts()
   target.dontTouchPorts()
   target.reset := adapter.io.sys_reset

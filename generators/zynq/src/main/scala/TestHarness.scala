@@ -19,7 +19,7 @@ class TestHarness(implicit val p: Parameters) extends Module {
   val dut = Module(LazyModule(new FPGAZynqTop).module)
 
   dut.reset := driver.io.sys_reset
-  dut.debug := DontCare
+  dut.debug.map(_ := DontCare) //TODO: figure out if we need this!
   dut.tieOffInterrupts()
   dut.dontTouchPorts()
   dut.connectSimAXIMem()
