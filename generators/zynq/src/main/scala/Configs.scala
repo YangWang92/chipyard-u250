@@ -64,6 +64,8 @@ class ZynqMediumFPGAConfig extends Config(new WithoutTLMonitors ++ new ZynqMediu
 class ZynqSmallFPGAConfig extends Config(new WithoutTLMonitors ++ new ZynqSmallConfig)
 
 class SmallBoomZynqConfig extends Config(
-  new WithBootROM ++ new WithZynqAdapter ++ new SmallBoomConfig)
-class MediumBoomZynqConfig extends Config(
-  new WithBootROM ++ new WithZynqAdapter ++ new MediumBoomConfig)
+  new WithBootROM ++
+  new WithZynqAdapter ++
+  new boom.common.WithSmallBooms ++                         // 1-wide BOOM
+  new boom.common.WithNBoomCores(1) ++                      // single-core
+  new freechips.rocketchip.system.BaseConfig)
