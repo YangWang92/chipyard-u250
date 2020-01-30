@@ -11,7 +11,7 @@ import testchipip._
 
 class WithBootROM extends Config((site, here, up) => {
   case BootROMParams => BootROMParams(
-    contentFileName = s"testchipip/bootrom/bootrom.rv${site(XLen)}.img") // TODO: maybe change path to be s"./bootrom/bootrom.rv${site(XLen)}.img")
+    contentFileName = s"./bootrom/bootrom.rv${site(XLen)}.img")
 })
 
 class WithZynqAdapter extends Config((site, here, up) => {
@@ -23,6 +23,7 @@ class WithZynqAdapter extends Config((site, here, up) => {
   case BlockDeviceKey => Some(BlockDeviceConfig(nTrackers = 2))
   case BlockDeviceFIFODepth => 16
   case NetworkFIFODepth => 16
+  case SerialKey => true
 })
 
 class WithNMediumCores(n: Int) extends Config((site, here, up) => {

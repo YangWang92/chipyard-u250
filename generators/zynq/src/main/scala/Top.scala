@@ -7,7 +7,7 @@ import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util.DontTouch
 import testchipip._
-import utilities.{Subsystem, SubsystemModuleImp}
+import utilities._
 
 case object ZynqAdapterBase extends Field[BigInt]
 
@@ -35,23 +35,24 @@ class Top(implicit val p: Parameters) extends Module {
   target.reset := adapter.io.sys_reset
 }
 
-class FPGAZynqTop(implicit p: Parameters) extends Subsystem
-    with CanHaveMasterAXI4MemPort
+class FPGAZynqTop(implicit p: Parameters) extends Subsystem // don't use system because we want synchronous interrupts
+  with HasHierarchicalBusTopology // no idea what this does but it seems to help
+  with CanHaveMasterAXI4MemPort
 //    with HasSystemErrorSlave
-    with HasPeripheryBootROM
-    with HasSyncExtInterrupts
-    with HasNoDebug
-    with CanHavePeripherySerial
-    with CanHavePeripheryBlockDevice {
+  with HasPeripheryBootROM
+  with HasSyncExtInterrupts
+  with HasNoDebug
+  with CanHavePeripherySerial
+  with CanHavePeripheryBlockDevice {
   override lazy val module = new FPGAZynqTopModule(this)
 }
 
 class FPGAZynqTopModule(outer: FPGAZynqTop) extends SubsystemModuleImp(outer)
-    with HasRTCModuleImp
-    with CanHaveMasterAXI4MemPortModuleImp
-    with HasPeripheryBootROMModuleImp
-    with HasExtInterruptsModuleImp
-    with HasNoDebugModuleImp
-    with CanHavePeripherySerialModuleImp
-    with CanHavePeripheryBlockDeviceModuleImp
-    with DontTouch
+  with HasRTCModuleImp
+  with CanHaveMasterAXI4MemPortModuleImp
+  with HasPeripheryBootROMModuleImp
+  with HasExtInterruptsModuleImp
+  with HasNoDebugModuleImp
+  with CanHavePeripherySerialModuleImp
+  with CanHavePeripheryBlockDeviceModuleImp
+  with DontTouch

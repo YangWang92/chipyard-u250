@@ -83,7 +83,7 @@ ifeq ($(SUB_PROJECT),zynq)
 	CONFIG_PACKAGE    ?= $(SBT_PROJECT)
 	GENERATOR_PACKAGE ?= $(SBT_PROJECT)
 	TB                ?= TestDriver
-	TOP               ?= Top
+	TOP               ?= FPGAZynqTop
 endif
 # Stand-in firechip variables:
 # TODO: need a seperate generator and test harnesses for each target
