@@ -28,7 +28,8 @@ sim_debug = $(sim_dir)/$(sim_prefix)-$(MODEL_PACKAGE)-$(CONFIG)-debug
 PERMISSIVE_ON=
 PERMISSIVE_OFF=
 
-WAVEFORM_FLAG=-v$(sim_out_name).vcd
+WAVEFORM_FLAG=-vwave.vcd
+#-v$(sim_out_name).vcd
 
 .PHONY: default debug
 default: $(sim)
