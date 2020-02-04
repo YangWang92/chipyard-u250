@@ -71,10 +71,36 @@ proc printQueue {time base_name name {indent ""}} {
         set head [expr [valueAtTime "${base_name}.head" $time]]
         set tail [expr [valueAtTime "${base_name}.tail" $time]]
 #        puts "head: $head tail: $tail"
-        for {set i $head} {$i != $tail} {set i [expr {[expr {$i+1}] % 8 }]} {
-            printUop "${base_name}.q_uop_$i" $time "${indent}    "
+        # ugly workaround for full queue
+        if {$head == $tail} {
+            printUop "${base_name}.q_uop_${head}" $time "${indent}    "
+            puts "${indent}---------------------------------"
+            set head [expr {($head+1) % 8 }]
+        }
+        for {set i $head} {$i != $tail} {set i [expr {($i+1) % 8 }]} {
+            printUop "${base_name}.q_uop_${i}" $time "${indent}    "
             puts "${indent}---------------------------------"
         }
+    }
+}
+
+proc printIssueSlot {time base_name name {indent ""}} {
+    set p1 [valueAtTime "${base_name}.p1" $time]
+    set p2 [valueAtTime "${base_name}.p2" $time]
+    set request [valueAtTime "${base_name}.io_request" $time]
+    set grant [valueAtTime "${base_name}.io_grant" $time]
+    set state [valueAtTime "${base_name}.state" $time]
+    puts "${indent}${name} - state: $state - p1: $p1 - p2: $p2 - request: $request - grant: $grant"
+    puts "${indent}incoming: ================================="
+    set in_valid [valueAtTime "${base_name}.io_in_uop_valid" $time]
+    if {$in_valid == "1" } {
+        printUop "${base_name}.io_in_uop_bits" $time "${indent}   "
+        puts "${indent}---------------------------------"
+    }
+    puts "${indent}current: ================================="
+    if {$state == "0b01" } {
+        printUop "${base_name}.slot_uop" $time "${indent}   "
+        puts "${indent}---------------------------------"
     }
 }
 
@@ -85,6 +111,16 @@ proc printState {time} {
     puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
     printQueue $time "TOP.TestHarness.top.boom_tile.core.dispatcher.b_queue" "B-queue" "  "
     puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    printIssueSlot $time "TOP.TestHarness.top.boom_tile.core.int_issue_unit.slots_0" "A-int" "  "
+    puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    printIssueSlot $time "TOP.TestHarness.top.boom_tile.core.mem_issue_unit.slots_0" "A-mem" "  "
+    puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    printIssueSlot $time "TOP.TestHarness.top.boom_tile.core.fp_pipeline.fp_issue_unit.slots_0" "A-fp" "  "
+    puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    printIssueSlot $time "TOP.TestHarness.top.boom_tile.core.int_issue_unit.slots_1" "B-int" "  "
+    puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    printIssueSlot $time "TOP.TestHarness.top.boom_tile.core.mem_issue_unit.slots_1" "B-mem" "  "
+    puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 }
 
 #set ist [getIST 128]
@@ -94,4 +130,5 @@ proc printState {time} {
 #printQueue [gtkwave::getMarker] "TOP.TestHarness.top.boom_tile.core.dispatcher.a_queue" "A-queue"
 #puts [valueAtTime ]
 printState [gtkwave::getMarker]
+#printIssueSlot [gtkwave::getMarker] "TOP.TestHarness.top.boom_tile.core.int_issue_unit.slots_0" "A-int"
 
