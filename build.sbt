@@ -8,7 +8,7 @@ lazy val commonSettings = Seq(
   organization := "edu.berkeley.cs",
   version := "1.0",
   scalaVersion := "2.12.10",
-  traceLevel := 15,
+  traceLevel := 100,
   test in assembly := {},
   assemblyMergeStrategy in assembly := { _ match {
     case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
@@ -156,6 +156,10 @@ lazy val gemmini = (project in file("generators/gemmini"))
 
 lazy val tapeout = conditionalDependsOn(project in file("./tools/barstools/tapeout/"))
   .dependsOn(chisel_testers, example)
+  .settings(commonSettings)
+
+lazy val zynq = (project in file("generators/zynq"))
+  .dependsOn(example)
   .settings(commonSettings)
 
 lazy val mdf = (project in file("./tools/barstools/mdf/scalalib/"))
