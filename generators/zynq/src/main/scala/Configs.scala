@@ -70,3 +70,10 @@ class SmallBoomZynqConfig extends Config(
   new boom.common.WithSmallBooms ++                         // 1-wide BOOM
   new boom.common.WithNBoomCores(1) ++                      // single-core
   new freechips.rocketchip.system.BaseConfig)
+
+class SliceBoomZynqConfig extends Config(
+  new WithBootROM ++
+  new WithZynqAdapter ++
+  new boom.common.WithSliceBooms ++                         // 1-wide BOOM
+  new boom.common.WithNBoomCores(1) ++                      // single-core
+  new freechips.rocketchip.system.BaseConfig)

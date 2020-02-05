@@ -35,7 +35,9 @@ proc getIST {size} {
 }
 
 proc dasm {inst} {
-    set dasm_io [open "|/home/david/git/chipyard/riscv-tools-install/bin/spike-dasm" r+]
+    set riscv_dir $::env(RISCV)
+    # starts a new dasm process - not ideal but works
+    set dasm_io [open "|${riscv_dir}/bin/spike-dasm" r+]
     puts $dasm_io "DASM($inst)"
     flush $dasm_io
     gets $dasm_io line
@@ -131,4 +133,3 @@ proc printState {time} {
 #puts [valueAtTime ]
 printState [gtkwave::getMarker]
 #printIssueSlot [gtkwave::getMarker] "TOP.TestHarness.top.boom_tile.core.int_issue_unit.slots_0" "A-int"
-
