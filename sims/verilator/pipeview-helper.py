@@ -52,6 +52,9 @@ from collections import deque
 def getFSeqNum(line, idx):
     return int(line[0:idx])
 
+def getCycle(line):
+    return int(line.split(":")[2])
+
 
 def generate_pipeview_file(log):
     lines = log.readlines()
@@ -78,6 +81,7 @@ def generate_pipeview_file(log):
         d = seq_dict[s]
         fetch_id = s
         prev_cycle = 0
+        retire_cycle =  getCycle(d["retire"]) if "retire" in d else 0
         for stage in [
             "fetch",
             "decode",
@@ -91,12 +95,14 @@ def generate_pipeview_file(log):
         ]:
             if stage in d:
                 line = d[stage]
-                cycle = int(line.split(":")[2])
+                cycle = getCycle(line)
                 if(cycle==prev_cycle): # skip instructions in same cycle
+                    print "O3PipeView:"+stage+": 0"
+                elif stage != "retire" and cycle == retire_cycle:
                     print "O3PipeView:"+stage+": 0"
                 else:
                     print line[idx+2:]
-                prev_cycle = cycle
+                    prev_cycle = cycle
             else:
                 print "O3PipeView:"+stage+": 0"
 
