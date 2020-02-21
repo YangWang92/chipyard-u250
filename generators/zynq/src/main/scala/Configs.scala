@@ -1,8 +1,9 @@
 package zynq
 
 import chisel3._
+import freechips.rocketchip.diplomacy._
 import example.{MediumBoomConfig, SmallBoomConfig}
-import freechips.rocketchip.config.{Config, Parameters}
+import freechips.rocketchip.config._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.tilelink.BootROMParams
 import freechips.rocketchip.rocket.{DCacheParams, ICacheParams, MulDivParams, RocketCoreParams}
@@ -26,49 +27,12 @@ class WithZynqAdapter extends Config((site, here, up) => {
   case SerialKey => true
 })
 
-class WithNMediumCores(n: Int) extends Config((site, here, up) => {
-  case RocketTilesKey => {
-    val medium = RocketTileParams(
-      core = RocketCoreParams(fpu = None),
-      btb = None,
-      dcache = Some(DCacheParams(
-        rowBits = site(SystemBusKey).beatBytes*8,
-        nSets = 64,
-        nWays = 1,
-        nTLBEntries = 4,
-        nMSHRs = 0,
-        blockBytes = site(CacheBlockBytes))),
-      icache = Some(ICacheParams(
-        rowBits = site(SystemBusKey).beatBytes*8,
-        nSets = 64,
-        nWays = 1,
-        nTLBEntries = 4,
-        blockBytes = site(CacheBlockBytes))))
-    List.tabulate(n)(i => medium.copy(hartId = i))
-  }
-})
-
-class DefaultConfig extends Config(
-  new WithBootROM ++ new freechips.rocketchip.system.DefaultConfig)
-class DefaultMediumConfig extends Config(
-  new WithBootROM ++ new WithNMediumCores(1) ++
-  new freechips.rocketchip.system.BaseConfig)
-class DefaultSmallConfig extends Config(
-  new WithBootROM ++ new freechips.rocketchip.system.DefaultSmallConfig)
-
-class ZynqConfig extends Config(new WithZynqAdapter ++ new DefaultConfig)
-class ZynqMediumConfig extends Config(new WithZynqAdapter ++ new DefaultMediumConfig)
-class ZynqSmallConfig extends Config(new WithZynqAdapter ++ new DefaultSmallConfig)
-
-class ZynqFPGAConfig extends Config(new WithoutTLMonitors ++ new ZynqConfig)
-class ZynqMediumFPGAConfig extends Config(new WithoutTLMonitors ++ new ZynqMediumConfig)
-class ZynqSmallFPGAConfig extends Config(new WithoutTLMonitors ++ new ZynqSmallConfig)
-
 class SmallBoomZynqConfig extends Config(
   new WithBootROM ++
   new WithZynqAdapter ++
   new boom.common.WithSmallBooms ++                         // 1-wide BOOM
   new boom.common.WithNBoomCores(1) ++                      // single-core
+  new WithoutTLMonitors ++                                  // disable TL verification
   new freechips.rocketchip.system.BaseConfig)
 
 class SliceBoomZynqConfig extends Config(
@@ -76,4 +40,21 @@ class SliceBoomZynqConfig extends Config(
   new WithZynqAdapter ++
   new boom.common.WithSliceBooms ++                         // 1-wide BOOM
   new boom.common.WithNBoomCores(1) ++                      // single-core
+  new WithoutTLMonitors ++                                  // disable TL verification
   new freechips.rocketchip.system.BaseConfig)
+
+class RocketZynqConfig extends Config(
+  new WithBootROM ++
+  new WithZynqAdapter ++
+  new WithNBigCores(1) ++                      // single-core Big Rocket
+  new WithoutTLMonitors ++                     // disable TL verification
+  new freechips.rocketchip.system.BaseConfig)
+
+// for zc706_MIG
+class With1GbRam extends Config(
+  new WithExtMemSize(40000000L)
+)
+// for zc706
+class With768MbRam extends Config(
+  new WithExtMemSize(30000000L)
+)
