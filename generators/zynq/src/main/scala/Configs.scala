@@ -1,5 +1,6 @@
 package zynq
 
+import boom.common.BoomTilesKey
 import chisel3._
 import freechips.rocketchip.diplomacy._
 import example.{MediumBoomConfig, SmallBoomConfig}
@@ -27,9 +28,20 @@ class WithZynqAdapter extends Config((site, here, up) => {
   case SerialKey => true
 })
 
+class With50Mhz extends Config((site, here, up) => {
+  case BoomTilesKey => up(BoomTilesKey, site) map { b => b.copy(
+    core = b.core.copy(bootFreqHz = 50000000)
+  )}
+  case RocketTilesKey => up(RocketTilesKey, site) map { b => b.copy(
+    core = b.core.copy(bootFreqHz = 50000000)
+  )}
+  case PeripheryBusKey => up(PeripheryBusKey, site).copy(frequency = 50000000)
+})
+
 class SmallBoomZynqConfig extends Config(
   new WithBootROM ++
   new WithZynqAdapter ++
+  new With50Mhz ++
   new boom.common.WithSmallBooms ++                         // 1-wide BOOM
   new boom.common.WithNBoomCores(1) ++                      // single-core
   new WithoutTLMonitors ++                                  // disable TL verification
@@ -38,23 +50,30 @@ class SmallBoomZynqConfig extends Config(
 class SliceBoomZynqConfig extends Config(
   new WithBootROM ++
   new WithZynqAdapter ++
+  new With50Mhz ++
   new boom.common.WithSliceBooms ++                         // 1-wide BOOM
   new boom.common.WithNBoomCores(1) ++                      // single-core
   new WithoutTLMonitors ++                                  // disable TL verification
   new freechips.rocketchip.system.BaseConfig)
 
-class RocketZynqConfig extends Config(
+class RocketZynqConfig extends Config( // rocket should be able to run at ~80MHz in this config - needs to also be changed in clocking.vh
   new WithBootROM ++
   new WithZynqAdapter ++
+  new With50Mhz ++
   new WithNBigCores(1) ++                      // single-core Big Rocket
   new WithoutTLMonitors ++                     // disable TL verification
   new freechips.rocketchip.system.BaseConfig)
 
 // for zc706_MIG
 class With1GbRam extends Config(
-  new WithExtMemSize(40000000L)
+  new WithExtMemSize(0x40000000L)
 )
 // for zc706
 class With768MbRam extends Config(
-  new WithExtMemSize(30000000L)
+  new WithExtMemSize(0x30000000L)
+)
+// for upcoming combined version
+class With1p5GbRam extends Config(
+  new WithExtMemSize(0x60000000L) ++
+  new WithNMemoryChannels(2)
 )

@@ -30,7 +30,7 @@ class Top(implicit val p: Parameters) extends Module {
   adapter.io.bdev <> target.bdev.get
 
   target.debug.map(_ := DontCare) //TODO: figure out if we need this! - probably not due to NoDebug
-  target.tieOffInterrupts()
+//  target.tieOffInterrupts()
   target.dontTouchPorts()
   target.reset := adapter.io.sys_reset
 }
@@ -40,7 +40,7 @@ class FPGAZynqTop(implicit p: Parameters) extends Subsystem // don't use system 
   with CanHaveMasterAXI4MemPort
 //    with HasSystemErrorSlave
   with HasPeripheryBootROM
-  with HasSyncExtInterrupts
+//  with HasSyncExtInterrupts //TODO: check if we actually need this
   with HasNoDebug
   with CanHavePeripherySerial
   with CanHavePeripheryBlockDevice {
@@ -51,7 +51,7 @@ class FPGAZynqTopModule(outer: FPGAZynqTop) extends SubsystemModuleImp(outer)
   with HasRTCModuleImp
   with CanHaveMasterAXI4MemPortModuleImp
   with HasPeripheryBootROMModuleImp
-  with HasExtInterruptsModuleImp
+//  with HasExtInterruptsModuleImp
   with HasNoDebugModuleImp
   with CanHavePeripherySerialModuleImp
   with CanHavePeripheryBlockDeviceModuleImp
