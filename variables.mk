@@ -73,6 +73,18 @@ ifeq ($(SUB_PROJECT),hwacha)
 	TB                ?= TestDriver
 	TOP               ?= ExampleRocketSystem
 endif
+# targeting zynq fpgas
+ifeq ($(SUB_PROJECT),zynq)
+	SBT_PROJECT       ?= zynq
+	MODEL             ?= Top
+	VLOG_MODEL        ?= Top
+	MODEL_PACKAGE     ?= $(SBT_PROJECT)
+	CONFIG            ?= SmallBoomZynqConfig
+	CONFIG_PACKAGE    ?= $(SBT_PROJECT)
+	GENERATOR_PACKAGE ?= $(SBT_PROJECT)
+	TB                ?= TestDriver
+	TOP               ?= FPGAZynqTop
+endif
 # Stand-in firechip variables:
 # TODO: need a seperate generator and test harnesses for each target
 #ifeq ($(SUB_PROJECT),firechip)
@@ -140,7 +152,7 @@ JAVA_ARGS ?= -Xmx$(JAVA_HEAP_SIZE) -Xss8M -XX:MaxPermSize=256M
 #########################################################################################
 # default sbt launch command
 #########################################################################################
-SCALA_VERSION=2.12.4
+SCALA_VERSION=2.12.10
 SCALA_VERSION_MAJOR=$(basename $(SCALA_VERSION))
 
 SBT ?= java $(JAVA_ARGS) -jar $(ROCKETCHIP_DIR)/sbt-launch.jar ++$(SCALA_VERSION)
