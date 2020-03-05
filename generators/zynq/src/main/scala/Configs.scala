@@ -29,6 +29,7 @@ class WithZynqAdapter extends Config((site, here, up) => {
 })
 
 class With50Mhz extends Config((site, here, up) => {
+  // If a frequency other than 1GHz is used CLOCK_FREQ in the proxy-kernel (sascall.c) has to be adjusted!
   case BoomTilesKey => up(BoomTilesKey, site) map { b => b.copy(
     core = b.core.copy(bootFreqHz = 50000000)
   )}
@@ -38,30 +39,56 @@ class With50Mhz extends Config((site, here, up) => {
   case PeripheryBusKey => up(PeripheryBusKey, site).copy(frequency = 50000000)
 })
 
-class SmallBoomZynqConfig extends Config(
+class WithNPerfCounters(n: Int) extends Config((site, here, up) => {
+  case BoomTilesKey => up(BoomTilesKey, site) map { b => b.copy(core = b.core.copy(
+    nPerfCounters = n
+  ))}
+  case RocketTilesKey => up(RocketTilesKey, site) map { r => r.copy(core = r.core.copy(
+    nPerfCounters = n
+  ))}
+})
+
+class WithZynqConfig extends Config(
   new WithBootROM ++
   new WithZynqAdapter ++
   new With50Mhz ++
+  new WithoutTLMonitors ++                                  // disable TL verification
+  new WithNPerfCounters(10)
+)
+
+class MegaBoomZynqConfig extends Config(
+  new WithZynqConfig ++
+  new boom.common.WithMegaBooms ++
+  new boom.common.WithNBoomCores(1) ++                      // single-core
+  new freechips.rocketchip.system.BaseConfig)
+
+class LargeBoomZynqConfig extends Config(
+  new WithZynqConfig ++
+  new boom.common.WithLargeBooms ++
+  new boom.common.WithNBoomCores(1) ++                      // single-core
+  new freechips.rocketchip.system.BaseConfig)
+
+class MediumBoomZynqConfig extends Config(
+  new WithZynqConfig ++
+  new boom.common.WithMediumBooms ++
+  new boom.common.WithNBoomCores(1) ++                      // single-core
+  new freechips.rocketchip.system.BaseConfig)
+
+class SmallBoomZynqConfig extends Config(
+  new WithZynqConfig ++
   new boom.common.WithSmallBooms ++                         // 1-wide BOOM
   new boom.common.WithNBoomCores(1) ++                      // single-core
-  new WithoutTLMonitors ++                                  // disable TL verification
   new freechips.rocketchip.system.BaseConfig)
 
 class SliceBoomZynqConfig extends Config(
-  new WithBootROM ++
-  new WithZynqAdapter ++
-  new With50Mhz ++
+  new WithZynqConfig ++
   new boom.common.WithSliceBooms ++                         // 1-wide BOOM
   new boom.common.WithNBoomCores(1) ++                      // single-core
-  new WithoutTLMonitors ++                                  // disable TL verification
   new freechips.rocketchip.system.BaseConfig)
 
 class RocketZynqConfig extends Config( // rocket should be able to run at ~80MHz in this config - needs to also be changed in clocking.vh
-  new WithBootROM ++
-  new WithZynqAdapter ++
-  new With50Mhz ++
+  new WithZynqConfig ++
   new WithNBigCores(1) ++                      // single-core Big Rocket
-  new WithoutTLMonitors ++                     // disable TL verification
   new freechips.rocketchip.system.BaseConfig)
 
 // for zc706_MIG
