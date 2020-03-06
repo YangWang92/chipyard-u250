@@ -88,6 +88,8 @@ def generate_pipeview_file(log):
             "rename",
             "a_queue",
             "b_queue",
+            "CRQ",
+            "DLQ",
             "dispatch",
             "issue",
             "complete",
