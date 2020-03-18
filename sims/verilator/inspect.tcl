@@ -50,9 +50,15 @@ proc printUop {base_name time {indent ""}} {
     set inst [ valueAtTime "${base_name}_debug_inst" $time]
     set pc [ valueAtTime "${base_name}_debug_pc" $time]
     set seq [ expr [valueAtTime "${base_name}_debug_events_fetch_seq" $time]]
+    set iq_type [ expr [valueAtTime "${base_name}_iq_type" $time]]
+    set prs1_busy [ expr [valueAtTime "${base_name}_prs1_busy" $time]]
+    set prs2_busy [ expr [valueAtTime "${base_name}_prs2_busy" $time]]
     puts "${indent}seq: ${seq}"
     puts "${indent}pc: ${pc}"
+    puts "${indent}iq-type: ${iq_type}"
     puts "${indent}inst: ${inst} - [dasm $inst]"
+    puts "${indent}prs1_busy: ${prs1_busy}"
+    puts "${indent}prs2_busy: ${prs2_busy}"
 }
 
 proc printQueue {time base_name name {indent ""}} {
@@ -107,22 +113,44 @@ proc printIssueSlot {time base_name name {indent ""}} {
 }
 
 proc printState {time} { 
+#    puts "time: $time"
+#    puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+#    printQueue $time "TOP.TestHarness.top.boom_tile.core.dispatcher.a_queue" "A-queue" "  "
+#    puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+#    printQueue $time "TOP.TestHarness.top.boom_tile.core.dispatcher.b_queue" "B-queue" "  "
+#    puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+
+    # single issue lsc
+#    printIssueSlot $time "TOP.TestHarness.top.boom_tile.core.int_issue_unit.slots_0" "A-int" "  "
+#    puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+#    printIssueSlot $time "TOP.TestHarness.top.boom_tile.core.mem_issue_unit.slots_0" "A-mem" "  "
+#    puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+#    printIssueSlot $time "TOP.TestHarness.top.boom_tile.core.fp_pipeline.fp_issue_unit.slots_0" "A-fp" "  "
+#    puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+#    printIssueSlot $time "TOP.TestHarness.top.boom_tile.core.int_issue_unit.slots_1" "B-int" "  "
+#    puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+#    printIssueSlot $time "TOP.TestHarness.top.boom_tile.core.mem_issue_unit.slots_1" "B-mem" "  "
+#    puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+
+    # unified stuff:
+#    printIssueSlot $time "TOP.TestHarness.top.boom_tile.core.unified_issue_unit.slots_0" "A-intmem" "  "
+#    puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+#    printIssueSlot $time "TOP.TestHarness.top.boom_tile.core.unified_issue_unit.slots_1" "B-intmem" "  "
+#    puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+#    printIssueSlot $time "TOP.TestHarness.top.boom_tile.core.fp_pipeline.fp_issue_unit.slots_0" "A-fp" "  "
+#    puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+
+    #DnB
     puts "time: $time"
     puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    printQueue $time "TOP.TestHarness.top.boom_tile.core.dispatcher.a_queue" "A-queue" "  "
+    printQueue $time "TOP.TestHarness.top.boom_tile.core.dispatcher.crq" "CRQ" "  "
     puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    printQueue $time "TOP.TestHarness.top.boom_tile.core.dispatcher.b_queue" "B-queue" "  "
+    printQueue $time "TOP.TestHarness.top.boom_tile.core.dispatcher.dlq" "DLQ" "  "
     puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    printIssueSlot $time "TOP.TestHarness.top.boom_tile.core.int_issue_unit.slots_0" "A-int" "  "
-    puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    printIssueSlot $time "TOP.TestHarness.top.boom_tile.core.mem_issue_unit.slots_0" "A-mem" "  "
-    puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    printIssueSlot $time "TOP.TestHarness.top.boom_tile.core.fp_pipeline.fp_issue_unit.slots_0" "A-fp" "  "
-    puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    printIssueSlot $time "TOP.TestHarness.top.boom_tile.core.int_issue_unit.slots_1" "B-int" "  "
-    puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    printIssueSlot $time "TOP.TestHarness.top.boom_tile.core.mem_issue_unit.slots_1" "B-mem" "  "
-    puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    for {set i 0} {$i < 8} {incr i} {
+        printIssueSlot $time "TOP.TestHarness.top.boom_tile.core.dnb_issue_unit.slots_$i" "IQ$i" "  "
+        puts "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    }
 }
 
 #set ist [getIST 128]

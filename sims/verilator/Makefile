@@ -95,6 +95,9 @@ $(model_mk_debug): $(sim_vsrcs) $(sim_common_files) $(INSTALLED_VERILATOR)
 	$(VERILATOR) $(VERILATOR_OPTS) -o $(sim_debug) --trace -Mdir $(model_dir_debug) -CFLAGS "-include $(model_header_debug)"
 	touch $@
 
+spike-log:
+	spike -l $(BINARY) 2> $(notdir $(basename $(BINARY))).spike.log
+
 #########################################################################################
 # invoke make to make verilator sim rules
 #########################################################################################

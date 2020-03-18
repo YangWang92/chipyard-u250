@@ -8,7 +8,7 @@ lazy val commonSettings = Seq(
   organization := "edu.berkeley.cs",
   version := "1.0",
   scalaVersion := "2.12.10",
-  traceLevel := 100,
+  traceLevel := 20,
   test in assembly := {},
   assemblyMergeStrategy in assembly := { _ match {
     case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
@@ -143,7 +143,7 @@ lazy val hwacha = (project in file("generators/hwacha"))
   .settings(commonSettings)
 
 lazy val boom = (project in file("generators/boom"))
-  .dependsOn(rocketchip)
+  .dependsOn(rocketchip, chisel_testers, testchipip)
   .settings(commonSettings)
 
 lazy val sha3 = (project in file("generators/sha3"))

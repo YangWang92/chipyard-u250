@@ -86,6 +86,12 @@ class SliceBoomZynqConfig extends Config(
   new boom.common.WithNBoomCores(1) ++                      // single-core
   new freechips.rocketchip.system.BaseConfig)
 
+class DnbBoomZynqConfig extends Config(
+  new WithZynqConfig ++
+  new boom.common.WithDnbBooms ++                         // 1-wide BOOM
+  new boom.common.WithNBoomCores(1) ++                      // single-core
+  new freechips.rocketchip.system.BaseConfig)
+
 class RocketZynqConfig extends Config( // rocket should be able to run at ~80MHz in this config - needs to also be changed in clocking.vh
   new WithZynqConfig ++
   new WithNBigCores(1) ++                      // single-core Big Rocket
