@@ -43,13 +43,13 @@
 	shallow = true
 [submodule "toolchains/riscv-tools/riscv-isa-sim"]
 	path = toolchains/riscv-tools/riscv-isa-sim
-	url = https://github.com/riscv/riscv-isa-sim.git
+	url = https://github.com/davidmetz/riscv-isa-sim
 [submodule "toolchains/riscv-tools/riscv-pk"]
 	path = toolchains/riscv-tools/riscv-pk
 	url = https://github.com/riscv/riscv-pk.git
 [submodule "toolchains/riscv-tools/riscv-tests"]
 	path = toolchains/riscv-tools/riscv-tests
-	url = https://github.com/riscv/riscv-tests.git
+	url = https://github.com/erlingrj/riscv-tests.git
 [submodule "toolchains/riscv-tools/riscv-openocd"]
 	path = toolchains/riscv-tools/riscv-openocd
 	url = https://github.com/riscv/riscv-openocd.git
