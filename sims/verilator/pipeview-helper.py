@@ -106,6 +106,8 @@ def generate_pipeview_file(log):
                     print line[idx+2:]
                     prev_cycle = cycle
             else:
+                if stage == "fetch":
+                    break
                 print "O3PipeView:"+stage+": 0"
 
 

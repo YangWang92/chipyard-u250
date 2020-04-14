@@ -80,6 +80,12 @@ class SmallBoomZynqConfig extends Config(
   new boom.common.WithNBoomCores(1) ++                      // single-core
   new freechips.rocketchip.system.BaseConfig)
 
+class SmallDualBoomZynqConfig extends Config(
+  new WithZynqConfig ++
+  new boom.common.WithSmallBooms ++                         // 1-wide BOOM
+  new boom.common.WithNBoomCores(2) ++                      // single-core
+  new freechips.rocketchip.system.BaseConfig)
+
 class SliceBoomZynqConfig extends Config(
   new WithZynqConfig ++
   new boom.common.WithSliceBooms ++                         // 1-wide BOOM
@@ -89,6 +95,12 @@ class SliceBoomZynqConfig extends Config(
 class DnbBoomZynqConfig extends Config(
   new WithZynqConfig ++
   new boom.common.WithDnbBooms ++                         // 1-wide BOOM
+  new boom.common.WithNBoomCores(1) ++                      // single-core
+  new freechips.rocketchip.system.BaseConfig)
+
+class CasBoomZynqConfig extends Config(
+  new WithZynqConfig ++
+  new boom.common.WithCasBooms ++                         // 1-wide BOOM
   new boom.common.WithNBoomCores(1) ++                      // single-core
   new freechips.rocketchip.system.BaseConfig)
 
