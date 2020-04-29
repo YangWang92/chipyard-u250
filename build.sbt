@@ -163,6 +163,10 @@ lazy val tapeout = conditionalDependsOn(project in file("./tools/barstools/tapeo
   .dependsOn(chisel_testers, chipyard)
   .settings(commonSettings)
 
+lazy val zynq = (project in file("generators/zynq"))
+  .dependsOn(chipyard)
+  .settings(commonSettings)
+
 lazy val mdf = (project in file("./tools/barstools/mdf/scalalib/"))
   .settings(commonSettings)
 
