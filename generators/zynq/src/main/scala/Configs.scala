@@ -86,21 +86,39 @@ class SmallDualBoomZynqConfig extends Config(
   new boom.common.WithNBoomCores(2) ++                      // single-core
   new freechips.rocketchip.system.BaseConfig)
 
-class SliceBoomZynqConfig extends Config(
+class MediumSliceBoomZynqConfig extends Config(
   new WithZynqConfig ++
-  new boom.common.WithSliceBooms ++                         // 1-wide BOOM
+  new boom.common.WithMediumSliceBooms ++                         // 1-wide BOOM
   new boom.common.WithNBoomCores(1) ++                      // single-core
   new freechips.rocketchip.system.BaseConfig)
 
-class DnbBoomZynqConfig extends Config(
+class MediumDnbBoomZynqConfig extends Config(
   new WithZynqConfig ++
-  new boom.common.WithDnbBooms ++                         // 1-wide BOOM
+  new boom.common.WithMediumDnbBooms ++                         // 1-wide BOOM
   new boom.common.WithNBoomCores(1) ++                      // single-core
   new freechips.rocketchip.system.BaseConfig)
 
-class CasBoomZynqConfig extends Config(
+class MediumBranchDnbBoomZynqConfig extends Config(
   new WithZynqConfig ++
-  new boom.common.WithCasBooms ++                         // 1-wide BOOM
+  new boom.common.WithMediumBranchDnbBooms ++                         // 1-wide BOOM
+  new boom.common.WithNBoomCores(1) ++                      // single-core
+  new freechips.rocketchip.system.BaseConfig)
+
+class MediumCasBoomZynqConfig extends Config(
+  new WithZynqConfig ++
+  new boom.common.WithMediumCasBooms ++                         // 1-wide BOOM
+  new boom.common.WithNBoomCores(1) ++                      // single-core
+  new freechips.rocketchip.system.BaseConfig)
+
+class MediumInoBoomZynqConfig extends Config(
+  new WithZynqConfig ++
+  new boom.common.WithMediumInoBooms ++                         // 1-wide BOOM
+  new boom.common.WithNBoomCores(1) ++                      // single-core
+  new freechips.rocketchip.system.BaseConfig)
+
+class SmallInoBoomZynqConfig extends Config(
+  new WithZynqConfig ++
+  new boom.common.WithSmallInoBooms ++                         // 1-wide BOOM
   new boom.common.WithNBoomCores(1) ++                      // single-core
   new freechips.rocketchip.system.BaseConfig)
 
@@ -113,6 +131,24 @@ class RocketZynqConfig extends Config( // rocket should be able to run at ~80MHz
 class With1GbRam extends Config(
   new WithExtMemSize(0x40000000L)
 )
+
+class WithL2Cache extends Config(
+  new WithInclusiveCache(
+
+  )
+)
+class WithL2TLB extends Config(
+  new WithL2TLBs
+)
+class WithL2TLBs(entries: Int=1024) extends Config((site, here, up) => {
+  case RocketTilesKey => up(RocketTilesKey) map (tile => tile.copy(
+    core = tile.core.copy(nL2TLBEntries = entries)
+  ))
+  case BoomTilesKey => up(BoomTilesKey) map (tile => tile.copy(
+    core = tile.core.copy(nL2TLBEntries = entries)
+  ))
+})
+
 // for zc706
 class With768MbRam extends Config(
   new WithExtMemSize(0x30000000L)

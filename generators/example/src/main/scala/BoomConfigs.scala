@@ -20,14 +20,14 @@ class SmallBoomConfig extends Config(
   new boom.common.WithNBoomCores(1) ++                      // single-core
   new freechips.rocketchip.system.BaseConfig)               // "base" rocketchip system
 
-class SliceBoomConfig extends Config(
+class MediumSliceBoomConfig extends Config(
   new WithTSI ++                                            // use testchipip serial offchip link
   new WithNoGPIO ++                                         // no top-level GPIO pins (overrides default set in sifive-blocks)
   new WithBootROM ++                                        // use testchipip bootrom
   new WithUART ++                                           // add a UART
   new freechips.rocketchip.subsystem.WithNoMMIOPort ++      // no top-level mmio master port (overrides default set in rocketchip)
   new freechips.rocketchip.subsystem.WithInclusiveCache ++  // use SiFive L2 cache
-  new boom.common.WithSliceBooms ++                         // 1-wide BOOM
+  new boom.common.WithMediumSliceBooms ++                         // 1-wide BOOM
   new boom.common.WithNBoomCores(1) ++                      // single-core
   new freechips.rocketchip.system.BaseConfig)               // "base" rocketchip system
 
@@ -38,9 +38,33 @@ class DnbBoomConfig extends Config(
   new WithUART ++                                           // add a UART
   new freechips.rocketchip.subsystem.WithNoMMIOPort ++      // no top-level mmio master port (overrides default set in rocketchip)
   new freechips.rocketchip.subsystem.WithInclusiveCache ++  // use SiFive L2 cache
-  new boom.common.WithDnbBooms ++                         // 1-wide BOOM
+  new boom.common.WithMediumDnbBooms ++                         // 1-wide BOOM
   new boom.common.WithNBoomCores(1) ++                      // single-core
   new freechips.rocketchip.system.BaseConfig)               // "base" rocketchip system
+
+
+class MediumBranchDnbBoomConfig extends Config(
+  new WithTSI ++                                            // use testchipip serial offchip link
+  new WithNoGPIO ++                                         // no top-level GPIO pins (overrides default set in sifive-blocks)
+  new WithBootROM ++                                        // use testchipip bootrom
+  new WithUART ++                                           // add a UART
+  new freechips.rocketchip.subsystem.WithNoMMIOPort ++      // no top-level mmio master port (overrides default set in rocketchip)
+  new freechips.rocketchip.subsystem.WithInclusiveCache ++  // use SiFive L2 cache
+  new boom.common.WithMediumDnbBooms ++                         // 1-wide BOOM
+  new boom.common.WithNBoomCores(1) ++                      // single-core
+  new freechips.rocketchip.system.BaseConfig)               // "base" rocketchip system
+
+class MediumCasBoomConfig extends Config(
+  new WithTSI ++
+  new WithNoGPIO ++
+  new WithBootROM ++
+  new WithUART ++
+  new freechips.rocketchip.subsystem.WithNoMMIOPort ++
+  new freechips.rocketchip.subsystem.WithNoSlavePort ++
+  new freechips.rocketchip.subsystem.WithInclusiveCache ++
+  new boom.common.WithMediumCasBooms ++                        // 2-wide BOOM
+  new boom.common.WithNBoomCores(1) ++
+  new freechips.rocketchip.system.BaseConfig)
 
 class MediumBoomConfig extends Config(
   new WithTSI ++
@@ -51,6 +75,29 @@ class MediumBoomConfig extends Config(
   new freechips.rocketchip.subsystem.WithNoSlavePort ++
   new freechips.rocketchip.subsystem.WithInclusiveCache ++
   new boom.common.WithMediumBooms ++                        // 2-wide BOOM
+  new boom.common.WithNBoomCores(1) ++
+  new freechips.rocketchip.system.BaseConfig)
+
+class MediumInoBoomConfig extends Config(
+  new WithTSI ++
+  new WithNoGPIO ++
+  new WithBootROM ++
+  new WithUART ++
+  new freechips.rocketchip.subsystem.WithNoMMIOPort ++
+  new freechips.rocketchip.subsystem.WithNoSlavePort ++
+  new freechips.rocketchip.subsystem.WithInclusiveCache ++
+  new boom.common.WithMediumInoBooms ++                        // 2-wide BOOM
+  new boom.common.WithNBoomCores(1) ++
+  new freechips.rocketchip.system.BaseConfig)
+class SmallInoBoomConfig extends Config(
+  new WithTSI ++
+  new WithNoGPIO ++
+  new WithBootROM ++
+  new WithUART ++
+  new freechips.rocketchip.subsystem.WithNoMMIOPort ++
+  new freechips.rocketchip.subsystem.WithNoSlavePort ++
+  new freechips.rocketchip.subsystem.WithInclusiveCache ++
+  new boom.common.WithSmallInoBooms ++                        // 2-wide BOOM
   new boom.common.WithNBoomCores(1) ++
   new freechips.rocketchip.system.BaseConfig)
 
