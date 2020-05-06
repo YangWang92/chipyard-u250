@@ -23,12 +23,16 @@ class Top(implicit val p: Parameters) extends Module {
   val io = IO(new Bundle {
     val ps_axi_slave = Flipped(adapter.axi.cloneType)
     val mem_axi = target.mem_axi4.head.cloneType
+    val fan_speed = Output(UInt(10.W))
+    val fan_rpm = Input(UInt(16.W))
   })
 
   io.mem_axi <> target.mem_axi4.head
   adapter.axi <> io.ps_axi_slave
   adapter.io.serial <> target.serial.get
   adapter.io.bdev <> target.bdev.get
+  io.fan_speed := adapter.io.fan_speed
+  adapter.io.fan_rpm := io.fan_rpm
 
   target.debug.map(_ := DontCare) //TODO: figure out if we need this! - probably not due to NoDebug
 //  target.tieOffInterrupts()

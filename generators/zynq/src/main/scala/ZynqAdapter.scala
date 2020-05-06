@@ -21,6 +21,8 @@ trait ZynqAdapterCoreBundle extends Bundle {
   val sys_reset = Output(Bool())
   val serial = Flipped(new SerialIO(SERIAL_IF_WIDTH))
   val bdev = Flipped(new BlockDeviceIO)
+  val fan_speed = Output(UInt(10.W))
+  val fan_rpm = Input(UInt(16.W))
 }
 
 trait ZynqAdapterCoreModule extends HasRegMap
@@ -57,23 +59,25 @@ trait ZynqAdapterCoreModule extends HasRegMap
 
   val ser_in_space = (serDepth.U - ser_in_fifo.io.count)
   val bdev_resp_space = (bdevDepth.U - bdev_resp_fifo.io.count)
+  val fan_speed = RegInit(1023.U(10.W))
+  io.fan_speed := fan_speed
 
   /**
-   * Address Map
-   * 0x00 - serial out FIFO data
-   * 0x04 - serial out FIFO data available (words)
-   * 0x08 - serial in  FIFO data
-   * 0x0C - serial in  FIFO space available (words)
-   * 0x10 - system reset
-   * 0x20 - req FIFO data
-   * 0x24 - req FIFO data available (words)
-   * 0x28 - data FIFO data
-   * 0x2C - data FIFO data available (words)
-   * 0x30 - resp FIFO data
-   * 0x34 - resp FIFO space available (words)
-   * 0x38 - nsectors
-   * 0x3C - max request length
-   */
+    * Address Map
+    * 0x00 - serial out FIFO data
+    * 0x04 - serial out FIFO data available (words)
+    * 0x08 - serial in  FIFO data
+    * 0x0C - serial in  FIFO space available (words)
+    * 0x10 - system reset
+    * 0x20 - req FIFO data
+    * 0x24 - req FIFO data available (words)
+    * 0x28 - data FIFO data
+    * 0x2C - data FIFO data available (words)
+    * 0x30 - resp FIFO data
+    * 0x34 - resp FIFO space available (words)
+    * 0x38 - nsectors
+    * 0x3C - max request length
+    */
   regmap(
     0x00 -> Seq(RegField.r(w, ser_out_fifo.io.deq)),
     0x04 -> Seq(RegField.r(serCountBits, ser_out_fifo.io.count)),
@@ -87,7 +91,10 @@ trait ZynqAdapterCoreModule extends HasRegMap
     0x30 -> Seq(RegField.w(w, bdev_resp_fifo.io.enq)),
     0x34 -> Seq(RegField.r(bdevCountBits, bdev_resp_space)),
     0x38 -> Seq(RegField(sectorBits, bdev_info.nsectors)),
-    0x3C -> Seq(RegField(sectorBits, bdev_info.max_req_len)))
+    0x3C -> Seq(RegField(sectorBits, bdev_info.max_req_len)),
+    0x40 -> Seq(RegField(10, fan_speed)),
+    0x44 -> Seq(RegField.r(16, io.fan_rpm)),
+  )
 }
 
 class ZynqAdapterCore(address: BigInt, beatBytes: Int)(implicit p: Parameters)
@@ -112,6 +119,8 @@ class ZynqAdapter(address: BigInt, config: SlavePortParams)(implicit p: Paramete
       val sys_reset = Output(Bool())
       val serial = Flipped(new SerialIO(SERIAL_IF_WIDTH))
       val bdev = Flipped(new BlockDeviceIO)
+      val fan_speed = Output(UInt(10.W))
+      val fan_rpm = Input(UInt(16.W))
     })
     val axi = IO(Flipped(node.out(0)._1.cloneType))
     node.out(0)._1 <> axi
@@ -120,5 +129,7 @@ class ZynqAdapter(address: BigInt, config: SlavePortParams)(implicit p: Paramete
     io.sys_reset := coreIO.sys_reset
     coreIO.serial <> io.serial
     coreIO.bdev <> io.bdev
+    io.fan_speed := coreIO.fan_speed
+    coreIO.fan_rpm := io.fan_rpm
   }
 }

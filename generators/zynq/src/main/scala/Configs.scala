@@ -90,11 +90,6 @@ class RocketZynqConfig extends Config( // rocket should be able to run at ~80MHz
   new WithNBigCores(1) ++                      // single-core Big Rocket
   new freechips.rocketchip.system.BaseConfig)
 
-// for zc706_MIG
-class With1GbRam extends Config(
-  new WithExtMemSize(0x40000000L)
-)
-
 class WithL2Cache extends Config(
   new WithInclusiveCache(
 
@@ -111,6 +106,16 @@ class WithL2TLBs(entries: Int=1024) extends Config((site, here, up) => {
     core = tile.core.copy(nL2TLBEntries = entries)
   ))
 })
+
+class WithBenchmarkConfig extends Config(
+  new WithL2TLB ++
+    new WithL2Cache ++
+    new With1GbRam
+)
+// for zc706_MIG
+class With1GbRam extends Config(
+  new WithExtMemSize(0x40000000L)
+)
 
 // for zc706
 class With768MbRam extends Config(
