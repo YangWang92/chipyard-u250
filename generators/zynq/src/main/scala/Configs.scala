@@ -10,6 +10,7 @@ import freechips.rocketchip.devices.tilelink.BootROMParams
 import freechips.rocketchip.rocket.{DCacheParams, ICacheParams, MulDivParams, RocketCoreParams}
 import freechips.rocketchip.tile.{RocketTileParams, XLen}
 import testchipip._
+import boom.common.{WithOriginalIbda, WithOneBitPcIbda, WithHash14Ibda, WithBloomIbda}
 
 class WithBootROM extends Config((site, here, up) => {
   case BootROMParams => BootROMParams(
@@ -56,69 +57,9 @@ class WithZynqConfig extends Config(
   new WithNPerfCounters(10)
 )
 
-class MegaBoomZynqConfig extends Config(
+class BoomBenchmarkZynqConfig extends Config(
+  new WithBenchmarkConfig ++
   new WithZynqConfig ++
-  new boom.common.WithMegaBooms ++
-  new boom.common.WithNBoomCores(1) ++                      // single-core
-  new freechips.rocketchip.system.BaseConfig)
-
-class LargeBoomZynqConfig extends Config(
-  new WithZynqConfig ++
-  new boom.common.WithLargeBooms ++
-  new boom.common.WithNBoomCores(1) ++                      // single-core
-  new freechips.rocketchip.system.BaseConfig)
-
-class MediumBoomZynqConfig extends Config(
-  new WithZynqConfig ++
-  new boom.common.WithMediumBooms ++
-  new boom.common.WithNBoomCores(1) ++                      // single-core
-  new freechips.rocketchip.system.BaseConfig)
-
-class SmallBoomZynqConfig extends Config(
-  new WithZynqConfig ++
-  new boom.common.WithSmallBooms ++                         // 1-wide BOOM
-  new boom.common.WithNBoomCores(1) ++                      // single-core
-  new freechips.rocketchip.system.BaseConfig)
-
-class SmallDualBoomZynqConfig extends Config(
-  new WithZynqConfig ++
-  new boom.common.WithSmallBooms ++                         // 1-wide BOOM
-  new boom.common.WithNBoomCores(2) ++                      // single-core
-  new freechips.rocketchip.system.BaseConfig)
-
-class MediumSliceBoomZynqConfig extends Config(
-  new WithZynqConfig ++
-  new boom.common.WithMediumSliceBooms ++                         // 1-wide BOOM
-  new boom.common.WithNBoomCores(1) ++                      // single-core
-  new freechips.rocketchip.system.BaseConfig)
-
-class MediumDnbBoomZynqConfig extends Config(
-  new WithZynqConfig ++
-  new boom.common.WithMediumDnbBooms ++                         // 1-wide BOOM
-  new boom.common.WithNBoomCores(1) ++                      // single-core
-  new freechips.rocketchip.system.BaseConfig)
-
-class MediumBranchDnbBoomZynqConfig extends Config(
-  new WithZynqConfig ++
-  new boom.common.WithMediumBranchDnbBooms ++                         // 1-wide BOOM
-  new boom.common.WithNBoomCores(1) ++                      // single-core
-  new freechips.rocketchip.system.BaseConfig)
-
-class MediumCasBoomZynqConfig extends Config(
-  new WithZynqConfig ++
-  new boom.common.WithMediumCasBooms ++                         // 1-wide BOOM
-  new boom.common.WithNBoomCores(1) ++                      // single-core
-  new freechips.rocketchip.system.BaseConfig)
-
-class MediumInoBoomZynqConfig extends Config(
-  new WithZynqConfig ++
-  new boom.common.WithMediumInoBooms ++                         // 1-wide BOOM
-  new boom.common.WithNBoomCores(1) ++                      // single-core
-  new freechips.rocketchip.system.BaseConfig)
-
-class SmallInoBoomZynqConfig extends Config(
-  new WithZynqConfig ++
-  new boom.common.WithSmallInoBooms ++                         // 1-wide BOOM
   new boom.common.WithNBoomCores(1) ++                      // single-core
   new freechips.rocketchip.system.BaseConfig)
 
@@ -148,6 +89,12 @@ class WithL2TLBs(entries: Int=1024) extends Config((site, here, up) => {
     core = tile.core.copy(nL2TLBEntries = entries)
   ))
 })
+
+class WithBenchmarkConfig extends Config(
+  new WithL2TLB ++
+  new WithL2Cache ++
+  new With1GbRam
+)
 
 // for zc706
 class With768MbRam extends Config(
