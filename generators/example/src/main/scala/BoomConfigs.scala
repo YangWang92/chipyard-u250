@@ -89,6 +89,19 @@ class MediumInoBoomConfig extends Config(
   new boom.common.WithMediumInoBooms ++                        // 2-wide BOOM
   new boom.common.WithNBoomCores(1) ++
   new freechips.rocketchip.system.BaseConfig)
+
+class MediumInoQueueBoomConfig extends Config(
+  new WithTSI ++
+  new WithNoGPIO ++
+  new WithBootROM ++
+  new WithUART ++
+  new freechips.rocketchip.subsystem.WithNoMMIOPort ++
+  new freechips.rocketchip.subsystem.WithNoSlavePort ++
+  new freechips.rocketchip.subsystem.WithInclusiveCache ++
+  new boom.common.WithMediumInoQueueBooms ++                        // 2-wide BOOM
+  new boom.common.WithNBoomCores(1) ++
+  new freechips.rocketchip.system.BaseConfig)
+
 class SmallInoBoomConfig extends Config(
   new WithTSI ++
   new WithNoGPIO ++
