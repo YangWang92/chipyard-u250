@@ -31,7 +31,7 @@ class MediumSliceBoomConfig extends Config(
   new boom.common.WithNBoomCores(1) ++                      // single-core
   new freechips.rocketchip.system.BaseConfig)               // "base" rocketchip system
 
-class DnbBoomConfig extends Config(
+class MediumDnbBoomConfig extends Config(
   new WithTSI ++                                            // use testchipip serial offchip link
   new WithNoGPIO ++                                         // no top-level GPIO pins (overrides default set in sifive-blocks)
   new WithBootROM ++                                        // use testchipip bootrom
@@ -111,6 +111,18 @@ class SmallInoBoomConfig extends Config(
   new freechips.rocketchip.subsystem.WithNoSlavePort ++
   new freechips.rocketchip.subsystem.WithInclusiveCache ++
   new boom.common.WithSmallInoBooms ++                        // 2-wide BOOM
+  new boom.common.WithNBoomCores(1) ++
+  new freechips.rocketchip.system.BaseConfig)
+
+class SmallInoQueueBoomConfig extends Config(
+  new WithTSI ++
+  new WithNoGPIO ++
+  new WithBootROM ++
+  new WithUART ++
+  new freechips.rocketchip.subsystem.WithNoMMIOPort ++
+  new freechips.rocketchip.subsystem.WithNoSlavePort ++
+  new freechips.rocketchip.subsystem.WithInclusiveCache ++
+  new boom.common.WithSmallInoQueueBooms ++                        // 2-wide BOOM
   new boom.common.WithNBoomCores(1) ++
   new freechips.rocketchip.system.BaseConfig)
 
