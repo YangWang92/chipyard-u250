@@ -74,6 +74,31 @@ ifeq ($(SUB_PROJECT),icenet)
 	TB                ?= TestDriver
 	TOP               ?= UnitTestSuite
 endif
+# targeting zynq fpgas
+ifeq ($(SUB_PROJECT),zynq)
+	SBT_PROJECT       ?= zynq
+	MODEL             ?= Top
+	VLOG_MODEL        ?= Top
+	MODEL_PACKAGE     ?= $(SBT_PROJECT)
+	CONFIG            ?= SmallBoomZynqConfig
+	CONFIG_PACKAGE    ?= $(SBT_PROJECT)
+	GENERATOR_PACKAGE ?= $(SBT_PROJECT)
+	TB                ?= TestDriver
+	TOP               ?= FPGAZynqTop
+endif
+# Stand-in firechip variables:
+# TODO: need a seperate generator and test harnesses for each target
+#ifeq ($(SUB_PROJECT),firechip)
+#	SBT_PROJECT       ?= $(SUB_PROJECT)
+#	MODEL             ?= TestHarness
+#	VLOG_MODEL        ?= TestHarness
+#	MODEL_PACKAGE     ?= freechips.rocketchip.system
+#	CONFIG            ?= FireSimRocketChipConfig
+#	CONFIG_PACKAGE    ?= firesim.firesim
+#	GENERATOR_PACKAGE ?= firesim.firesim
+#	TB                ?= TestDriver
+#	TOP               ?= FireSimNoNIC
+#endif
 
 #########################################################################################
 # path to rocket-chip and testchipip
