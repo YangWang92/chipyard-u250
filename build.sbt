@@ -148,7 +148,7 @@ lazy val hwacha = (project in file("generators/hwacha"))
   .settings(commonSettings)
 
 lazy val boom = conditionalDependsOn(project in file("generators/boom"))
-  .dependsOn(rocketchip)
+  .dependsOn(rocketchip, chisel_testers)
   .settings(commonSettings)
 
 lazy val ariane = (project in file("generators/ariane"))
