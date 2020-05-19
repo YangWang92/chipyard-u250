@@ -82,7 +82,7 @@ ifeq ($(SUB_PROJECT),zynq)
 	MODEL_PACKAGE     ?= $(SBT_PROJECT)
 	CONFIG            ?= SmallBoomZynqConfig
 	CONFIG_PACKAGE    ?= $(SBT_PROJECT)
-	GENERATOR_PACKAGE ?= $(SBT_PROJECT)
+	GENERATOR_PACKAGE ?= chipyard
 	TB                ?= TestDriver
 	TOP               ?= FPGAZynqTop
 endif

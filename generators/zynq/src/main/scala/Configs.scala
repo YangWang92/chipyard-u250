@@ -35,7 +35,7 @@ class With50Mhz extends Config((site, here, up) => {
   case RocketTilesKey => up(RocketTilesKey, site) map { b => b.copy(
     core = b.core.copy(bootFreqHz = 50000000)
   )}
-  case PeripheryBusKey => up(PeripheryBusKey, site).copy(frequency = 50000000)
+  case PeripheryBusKey => up(PeripheryBusKey, site).copy(dtsFrequency = Some(50000000))
 })
 
 class WithNPerfCounters(n: Int) extends Config((site, here, up) => {
@@ -49,6 +49,7 @@ class WithNPerfCounters(n: Int) extends Config((site, here, up) => {
 
 class WithZynqConfig extends Config(
   new WithBootROM ++
+  new WithCoherentBusTopology ++
   new WithZynqAdapter ++
   new With50Mhz ++
   new WithoutTLMonitors ++                                  // disable TL verification

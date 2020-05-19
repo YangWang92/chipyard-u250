@@ -22,7 +22,7 @@ class TestHarness(implicit val p: Parameters) extends Module {
   dut.debug.map(_ := DontCare) //TODO: figure out if we need this!
 //  dut.tieOffInterrupts()
   dut.dontTouchPorts()
-  dut.connectSimAXIMem()
+//  dut.connectSimAXIMem()
 
   driver.io.serial <> dut.serial.get
   driver.io.bdev <> dut.bdev.get
