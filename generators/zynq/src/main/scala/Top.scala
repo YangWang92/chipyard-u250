@@ -18,29 +18,29 @@ case object ZynqAdapterBase extends Field[BigInt]
 class Top(implicit val p: Parameters) extends Module {
   val address = p(ZynqAdapterBase)
   val config = p(ExtIn).get
-  val test = LazyModule(new FPGAZynqTop)
-  val target = Module(test.module)
+  val target = LazyModule(new FPGAZynqTop)
+  val target_mod = Module(target.module)
   val adapter = Module(LazyModule(new ZynqAdapter(address, config)).module)
 
-  require(test.mem_axi4.size == 1)
+  require(target.mem_axi4.size == 1)
   val io = IO(new Bundle {
     val ps_axi_slave = Flipped(adapter.axi.cloneType)
-    val mem_axi = test.mem_axi4.head.cloneType
+    val mem_axi = target.mem_axi4.head.cloneType
     val fan_speed = Output(UInt(10.W))
     val fan_rpm = Input(UInt(16.W))
   })
-  target.resetctrl.get.hartIsInReset.foreach(_ := adapter.io.sys_reset)
-  io.mem_axi <> test.mem_axi4.head
+  target_mod.resetctrl.get.hartIsInReset.foreach(_ := adapter.io.sys_reset)
+  io.mem_axi <> target.mem_axi4.head
   adapter.axi <> io.ps_axi_slave
-  adapter.io.serial <> target.serial.get
-  adapter.io.bdev <> target.bdev.get
+  adapter.io.serial <> target_mod.serial.get
+  adapter.io.bdev <> target_mod.bdev.get
   io.fan_speed := adapter.io.fan_speed
   adapter.io.fan_rpm := io.fan_rpm
 
-  target.debug.map(_ := DontCare) //TODO: figure out if we need this! - probably not due to NoDebug
+  target_mod.debug.map(_ := DontCare) //TODO: figure out if we need this! - probably not due to NoDebug
 //  target.tieOffInterrupts()
-  target.dontTouchPorts()
-  target.reset := adapter.io.sys_reset
+  target_mod.dontTouchPorts()
+  target_mod.reset := adapter.io.sys_reset
 }
 
 class FPGAZynqTop(implicit p: Parameters) extends Subsystem // don't use system because we want synchronous interrupts

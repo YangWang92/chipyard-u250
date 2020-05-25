@@ -86,9 +86,27 @@ class SmallDualBoomZynqConfig extends Config(
   new boom.common.WithNBoomCores(2) ++                      // dual-core
   new freechips.rocketchip.system.BaseConfig)
 
+class WithNCompCores(n: Int) extends Config((site, here, up) => {
+  case RocketTilesKey => {
+    val big = RocketTileParams(
+      core   = RocketCoreParams(mulDiv = Some(MulDivParams(
+        mulUnroll = 64, // use pipelined multiplier as in boom
+        mulEarlyOut = true,
+        divEarlyOut = true))),
+      dcache = Some(DCacheParams(
+        rowBits = site(SystemBusKey).beatBits,
+        nMSHRs = 0,
+        blockBytes = site(CacheBlockBytes))),
+      icache = Some(ICacheParams(
+        rowBits = site(SystemBusKey).beatBits,
+        blockBytes = site(CacheBlockBytes))))
+    List.tabulate(n)(i => big.copy(hartId = i))
+  }
+})
+
 class RocketZynqConfig extends Config( // rocket should be able to run at ~80MHz in this config - needs to also be changed in clocking.vh
   new WithZynqConfig ++
-  new WithNBigCores(1) ++                      // single-core Big Rocket
+  new WithNCompCores(1) ++                      // single-core Big Rocket
   new freechips.rocketchip.system.BaseConfig)
 
 class WithL2Cache extends Config(
