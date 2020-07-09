@@ -8,7 +8,7 @@ lazy val commonSettings = Seq(
   organization := "edu.berkeley.cs",
   version := "1.0",
   scalaVersion := "2.12.10",
-  traceLevel := 15,
+  traceLevel := 100,
   test in assembly := {},
   assemblyMergeStrategy in assembly := { _ match {
     case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
@@ -174,6 +174,10 @@ lazy val tapeout = conditionalDependsOn(project in file("./tools/barstools/tapeo
 
 lazy val zynq = (project in file("generators/zynq"))
   .dependsOn(chipyard)
+  .settings(commonSettings)
+
+lazy val wolverine = (project in file("generators/wolverine"))
+  .dependsOn(zynq)
   .settings(commonSettings)
 
 lazy val mdf = (project in file("./tools/barstools/mdf/scalalib/"))
