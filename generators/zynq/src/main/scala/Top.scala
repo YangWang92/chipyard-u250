@@ -22,15 +22,15 @@ class Top(implicit val p: Parameters) extends Module {
   val target = Module(test.module)
   val adapter = Module(LazyModule(new ZynqAdapter(address, config)).module)
 
-  require(test.mem_axi4.size == 1)
+//  require(test.mem_axi4.size == 1)
   val io = IO(new Bundle {
     val ps_axi_slave = Flipped(adapter.axi.cloneType)
-    val mem_axi = test.mem_axi4.head.cloneType
+    val mem_axi = test.mem_axi4.headOption.map(_.cloneType)
     val fan_speed = Output(UInt(10.W))
     val fan_rpm = Input(UInt(16.W))
   })
   target.resetctrl.get.hartIsInReset.foreach(_ := adapter.io.sys_reset)
-  io.mem_axi <> test.mem_axi4.head
+  io.mem_axi.map(_ <> test.mem_axi4.head)
   adapter.axi <> io.ps_axi_slave
   adapter.io.serial <> target.serial.get
   adapter.io.bdev <> target.bdev.get
