@@ -177,7 +177,7 @@ lazy val zynq = (project in file("generators/zynq"))
   .settings(commonSettings)
 
 lazy val wolverine = (project in file("generators/wolverine"))
-  .dependsOn(zynq)
+  .dependsOn(chisel_testers, zynq)
   .settings(commonSettings)
 
 lazy val mdf = (project in file("./tools/barstools/mdf/scalalib/"))
