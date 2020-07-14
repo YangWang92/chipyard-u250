@@ -482,6 +482,10 @@ class RocketScratchpadWolverineConfig extends Config( // rocket should be able t
     new WithNBanks(0) ++
     new RocketZynqConfig)
 
+class RocketAxiRamWolverineConfig extends Config( // rocket should be able to run at ~80MHz in this config - needs to also be changed in clocking.vh
+  new WithExtMemSize(0x00040000L) ++
+    new RocketZynqConfig)
+
 
 //class TinyRocketWolverineConfig extends Config(
 //  new WithNoMemPort ++
@@ -528,7 +532,9 @@ class RocketWolverineConfig extends Config( // rocket should be able to run at ~
 
 object WolverineTester extends App {
   println("Testing Wolverine Viewer")
-  implicit val p: Parameters = new RocketScratchpadWolverineConfig ++ Parameters.empty
+  // does not stop with scratchpad
+//  implicit val p: Parameters = new RocketScratchpadWolverineConfig ++ Parameters.empty
+  implicit val p: Parameters = new RocketAxiRamWolverineConfig ++ Parameters.empty
   iotesters.Driver.execute(Array("--backend-name", "verilator", "--generate-vcd-output", "on"), () => new WolverineTop()) {
     c =>
       new PeekPokeTester(c) {
