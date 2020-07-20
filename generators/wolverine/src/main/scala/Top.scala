@@ -6,11 +6,12 @@ import chisel3._
 import chisel3.experimental.IO
 import chisel3.iotesters.PeekPokeTester
 import chisel3.util._
-import freechips.rocketchip.amba.axi4.{AXI4Bundle, AXI4BundleParameters, AXI4Fragmenter, AXI4MasterNode, AXI4MasterParameters, AXI4MasterPortParameters, AXI4RegBundle, AXI4RegModule, AXI4RegisterRouter}
+import freechips.rocketchip.amba.AMBACorrupt
+import freechips.rocketchip.amba.axi4.{AXI4Buffer, AXI4Bundle, AXI4BundleParameters, AXI4EdgeParameters, AXI4FragLast, AXI4Fragmenter, AXI4MasterNode, AXI4MasterParameters, AXI4MasterPortParameters, AXI4RegBundle, AXI4RegModule, AXI4RegisterRouter, AXI4SlaveNode, AXI4SlaveParameters, AXI4SlavePortParameters}
 import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.devices.debug.{HasPeripheryDebug, HasPeripheryDebugModuleImp}
 import freechips.rocketchip.devices.tilelink._
-import freechips.rocketchip.diplomacy.{IdRange, LazyModule, LazyModuleImp, SynchronousCrossing}
+import freechips.rocketchip.diplomacy.{AddressSet, IdRange, InModuleBody, LazyModule, LazyModuleImp, MemoryDevice, RegionType, SimpleLazyModule, SynchronousCrossing, TransferSizes}
 import freechips.rocketchip.regmapper.RegField
 import freechips.rocketchip.rocket.{DCacheParams, ICacheParams, MulDivParams, RocketCoreParams}
 import freechips.rocketchip.subsystem._
@@ -216,7 +217,7 @@ class WolverineTop(implicit val p: Parameters) extends Module {
   io.dispAegCnt := regCnt.U
 
   //    val p: Parameters = new With1GbRam ++ new RocketZynqConfig ++ Parameters.empty
-  val memAxiIdBits = 4
+  val memAxiIdBits = p(ExtMem).get.master.idBits
 
   val top = Module(new Top()(p))
   val adapt_axi = top.io.ps_axi_slave
@@ -227,15 +228,19 @@ class WolverineTop(implicit val p: Parameters) extends Module {
 
   val sIDLE :: sREAD :: sWRITE :: sWRITE_DATA :: sREAD_DATA :: sWRITE_RESPONSE :: Nil = Enum(6)
 
-  val eOK :: eBURST :: eLEN :: eSIZE :: eQUEUE_READY :: eQUEUE_CMD :: Nil = Enum(6)
+  val eOK :: eBURST :: eLEN :: eSIZE :: eQUEUE_READY :: eQUEUE_CMD :: eMASK :: Nil = Enum(7)
 
   val mem_axi_error_reg = RegInit(eOK)
+  val mem_axi_error_next = WireInit(mem_axi_error_reg)
+  mem_axi_error_reg := mem_axi_error_next
   //TODO: allocate memory
   val mem_alloc_addr = regs(1)
 
-  val mem_ram_base = p(ExtMem).map(_.master.base.U).getOrElse(0.U)
+  val mem_ram_base: BigInt = p(ExtMem).map(_.master.base).getOrElse(0)
+  val mem_ram_size: BigInt = p(ExtMem).map(_.master.size).getOrElse(0)
   val mem_write_addr = RegInit(0.U)
   val mem_write_id = RegInit(0.U)
+  val mem_write_echo = RegInit(0.U)
   val mem_request_state = RegInit(sIDLE)
 
   val adapt_addr = RegInit(0.U)
@@ -350,16 +355,36 @@ class WolverineTop(implicit val p: Parameters) extends Module {
 
   io.mcResStall := false.B
 
-  top.io.mem_axi.map(mem_axi => {
-    // supports only 64byte transactions for now
+  top.io.mem_axi.map(master_axi => {
+    dontTouch(master_axi)
+
+    val edge = top.test.memAXI4Node.in.head._2
+    val simplm = LazyModule(new AXISimplifier(edge))
+    val simp = Module(simplm.module)
+    val mem_axi = simplm.io_mem_axi.head
+    simplm.io_master_axi.head <> master_axi
+    dontTouch(mem_axi)
+
+
+    // supports only single beat 1-8byte transactions for now
     // ensure correct values
     when(mem_axi.ar.valid) {
       when(mem_axi.ar.bits.burst =/= "b01".U /*INC*/) {
-        mem_axi_error_reg := eBURST
-      }.elsewhen(mem_axi.ar.bits.len =/= 7.U /*8 beats*/) {
-        mem_axi_error_reg := eLEN
-      }.elsewhen(mem_axi.ar.bits.size =/= "b011".U /*8 bytes*/) {
-        mem_axi_error_reg := eSIZE
+        mem_axi_error_next := eBURST
+      }.elsewhen(mem_axi.ar.bits.len =/= 0.U /*1 beat*/) {
+        mem_axi_error_next := eLEN
+      }
+      // reads of different sizes are allowed
+    }
+    assert(mem_axi_error_next === eOK)
+
+    when(mem_axi.aw.valid) {
+      when(mem_axi.aw.bits.burst =/= "b01".U /*INC*/) {
+        mem_axi_error_next := eBURST
+      }.elsewhen(mem_axi.aw.bits.len =/= 0.U /*1 beat*/) {
+        mem_axi_error_next := eLEN
+      }.elsewhen(mem_axi.aw.bits.size =/= "b011".U /*8 bytes*/) {
+        mem_axi_error_next := eSIZE
       }
     }
 
@@ -378,13 +403,14 @@ class WolverineTop(implicit val p: Parameters) extends Module {
     }.elsewhen(mem_request_state === sREAD) {
       mem_axi.ar.ready := can_request
       when(mem_axi.ar.fire()) {
+        // just always perform a quadword read
         mem_request_state := sIDLE
         io.mcReqValid := true.B
-        io.mcReqCmd := 7.U // multi-quadword read
+        io.mcReqCmd := 1.U // quadword read
         io.mcReqSCmd := 0.U
         io.mcReqSize := 3.U
-        io.mcReqAddr := mem_alloc_addr + mem_axi.ar.bits.addr - mem_ram_base
-        io.mcReqRtnCtl := Cat(0.U(1.W), mem_axi.ar.bits.id)
+        io.mcReqAddr := mem_alloc_addr + Cat(mem_axi.ar.bits.addr(31, 3), 0.U(3.W)) - mem_ram_base.U
+        io.mcReqRtnCtl := Cat(mem_axi.ar.bits.echo(AXI4FragLast), mem_axi.ar.bits.id)
       }
     }.elsewhen(mem_request_state === sWRITE) {
       mem_axi.aw.ready := can_request
@@ -392,16 +418,31 @@ class WolverineTop(implicit val p: Parameters) extends Module {
         mem_request_state := sWRITE_DATA
         mem_write_addr := mem_axi.aw.bits.addr
         mem_write_id := mem_axi.aw.bits.id
+        mem_write_echo := mem_axi.aw.bits.echo(AXI4FragLast)
       }
     }.elsewhen(mem_request_state === sWRITE_DATA) {
       mem_axi.w.ready := can_request
       when(mem_axi.w.fire()) {
         io.mcReqValid := true.B
-        io.mcReqCmd := 6.U // multi-quadword write
-        io.mcReqSCmd := 0.U // 8 beats (64bytes)
-        io.mcReqSize := 3.U
-        io.mcReqAddr := mem_alloc_addr + mem_write_addr - mem_ram_base
-        io.mcReqRtnCtl := Cat(1.U(1.W), mem_write_id)
+        io.mcReqCmd := 2.U // write
+        io.mcReqSCmd := 0.U // 1 beat
+        when(BitPat("b11111111") === mem_axi.w.bits.strb){
+          io.mcReqSize := 3.U // 8 bytes
+          io.mcReqData := mem_axi.w.bits.data
+          io.mcReqAddr := mem_alloc_addr + mem_write_addr - mem_ram_base.U
+        }.elsewhen(BitPat("b00001111") === mem_axi.w.bits.strb){
+          io.mcReqSize := 2.U // 4 bytes
+          io.mcReqData := mem_axi.w.bits.data(31,0)
+          io.mcReqAddr := mem_alloc_addr + mem_write_addr - mem_ram_base.U
+        }.elsewhen(BitPat("b11110000") === mem_axi.w.bits.strb){
+          io.mcReqSize := 2.U // 4 bytes
+          io.mcReqData := mem_axi.w.bits.data(63,32)
+          io.mcReqAddr := mem_alloc_addr + mem_write_addr - mem_ram_base.U + 4.U
+        }.otherwise{
+          mem_axi_error_next := eMASK
+          io.mcReqValid := false.B
+        }
+        io.mcReqRtnCtl := Cat(mem_write_echo, mem_write_id)
         when(mem_axi.w.bits.last) {
           mem_request_state := sIDLE
         }
@@ -415,7 +456,7 @@ class WolverineTop(implicit val p: Parameters) extends Module {
     io.mcResStall := response_queue.io.count >= 8.U
     // ensure that queue logic works
     when(response_queue.io.enq.valid && !response_queue.io.enq.ready) {
-      mem_axi_error_reg := eQUEUE_READY
+      mem_axi_error_next := eQUEUE_READY
     }
     response_queue.io.enq.bits.cmd := io.mcResCmd
     response_queue.io.enq.bits.scmd := io.mcResSCmd
@@ -430,31 +471,58 @@ class WolverineTop(implicit val p: Parameters) extends Module {
     mem_axi.r.bits.last := 0.U
     mem_axi.r.bits.resp := 0.U
     mem_axi.r.bits.data := 0.U
+    // TODO: actually implement... - as part of id so there is no storage needed?
+    mem_axi.r.bits.echo(AXI4FragLast) := false.B
+    mem_axi.b.bits.echo(AXI4FragLast) := false.B
 
     when(response_queue.io.deq.valid) {
       when(response_queue.io.deq.bits.cmd === 3.U /*WR_CMP*/) {
         mem_axi.b.valid := true.B
         mem_axi.b.bits.id := response_queue.io.deq.bits.rtnCtl(memAxiIdBits - 1, 0)
+        mem_axi.b.bits.echo(AXI4FragLast) := response_queue.io.deq.bits.rtnCtl(memAxiIdBits, memAxiIdBits)
         mem_axi.b.bits.resp := "b00".U //OK
         when(mem_axi.b.fire()) {
           response_queue.io.deq.ready := true.B
         }
-      }.elsewhen(response_queue.io.deq.bits.cmd === 7.U /*RD64_DATA*/) {
+      }.elsewhen(response_queue.io.deq.bits.cmd === 2.U /*RD_DATA*/) {
         mem_axi.r.valid := true.B
         mem_axi.r.bits.id := response_queue.io.deq.bits.rtnCtl(memAxiIdBits - 1, 0)
-        mem_axi.r.bits.last := response_queue.io.deq.bits.scmd === 7.U
+        mem_axi.r.bits.echo(AXI4FragLast) := response_queue.io.deq.bits.rtnCtl(memAxiIdBits, memAxiIdBits)
+        mem_axi.r.bits.last := true.B // only single beat reads
         mem_axi.r.bits.resp := "b00".U //OK
         mem_axi.r.bits.data := response_queue.io.deq.bits.readData
         when(mem_axi.r.fire()) {
           response_queue.io.deq.ready := true.B
         }
       }.otherwise {
-        mem_axi_error_reg := eQUEUE_CMD
+        mem_axi_error_next := eQUEUE_CMD
       }
     }
   })
 
   io.renameSignals()
+}
+
+class AXISimplifier(edge: AXI4EdgeParameters)(implicit p: Parameters) extends SimpleLazyModule {
+  val masterParams = edge.master
+  val masterNode = AXI4MasterNode(List(masterParams))
+  val addressSet = AddressSet.misaligned(p(ExtMem).get.master.base, p(ExtMem).get.master.size)
+  val device = new MemoryDevice
+  val slaveNode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
+    Seq(AXI4SlaveParameters(
+      address = addressSet,
+      resources = device.reg,
+      regionType = RegionType.UNCACHED,
+      executable = true,
+      supportsRead = TransferSizes(1, 8),
+      supportsWrite = TransferSizes(1, 8),
+      interleavedId = Some(0))),
+    beatBytes = 8,
+  )))
+
+  slaveNode := AXI4Buffer() := AXI4Fragmenter() := masterNode
+  val io_master_axi = InModuleBody{masterNode.makeIOs()}
+  val io_mem_axi = InModuleBody{slaveNode.makeIOs()}
 }
 
 class WithScratchpad extends Config((site, here, up) => {
@@ -523,160 +591,3 @@ class RocketAxiRamWolverineConfig extends Config( // rocket should be able to ru
 class RocketWolverineConfig extends Config( // rocket should be able to run at ~80MHz in this config - needs to also be changed in clocking.vh
   new With1GbRam ++
     new RocketZynqConfig)
-
-//object GenerateVerilog extends App {
-//  val p: Parameters = new RocketScratchpadWolverineConfig ++ Parameters.empty
-////  chisel3.Driver.execute(args, () => (new WolverineTop()(p)))
-//}
-
-
-object WolverineTester extends App {
-  println("Testing Wolverine Viewer")
-  // does not stop with scratchpad
-//  implicit val p: Parameters = new RocketScratchpadWolverineConfig ++ Parameters.empty
-  implicit val p: Parameters = new RocketAxiRamWolverineConfig ++ Parameters.empty
-  iotesters.Driver.execute(Array("--backend-name", "verilator", "--generate-vcd-output", "on"), () => new WolverineTop()) {
-    c =>
-      new PeekPokeTester(c) {
-        def writeReg(id: Int, data: BigInt) {
-          poke(c.io.dispRegID, id)
-          poke(c.io.dispRegWrite, true)
-          poke(c.io.dispRegWrData, data.U)
-          step(1)
-          poke(c.io.dispRegWrite, false)
-        }
-
-        def readReg(id: Int): BigInt = {
-          poke(c.io.dispRegID, id)
-          poke(c.io.dispRegRead, true)
-          step(1)
-          poke(c.io.dispRegRead, false)
-          expect(c.io.dispRtnValid, true)
-          peek(c.io.dispRtnData)
-        }
-
-        def writeCSR(id: Int, data: BigInt) {
-          poke(c.io.csrAddr, id)
-          poke(c.io.csrWrValid, true)
-          poke(c.io.csrWrData, data.U)
-          step(1)
-          poke(c.io.csrWrValid, false)
-        }
-
-        def readCSR(id: Int): BigInt = {
-          poke(c.io.csrAddr, id)
-          poke(c.io.csrRdValid, true)
-          step(1)
-          poke(c.io.csrRdValid, false)
-          expect(c.io.csrReadAck, true)
-          peek(c.io.csrReadData)
-        }
-
-        def writeAXI(addr: Long, data: BigInt): Unit = {
-          val tmp = BigInt(0x80000000L | addr) << 32 | data
-          writeCSR(8, tmp)
-          step(20)
-        }
-
-        def readAXI(addr: Long): BigInt = {
-          val tmp = BigInt(0x00000000L | addr) << 32
-          writeCSR(8, tmp)
-          step(20)
-          readCSR(8) & 0xFFFFFFFFL
-        }
-
-        expect(c.io.dispIdle, true)
-        expect(c.io.dispStall, false)
-        writeReg(1, 0xDEADBEEFL)
-        readReg(1)
-        assert(readReg(1) == 0xDEADBEEFL)
-        assert(readCSR(1) == 0xDEADBEEFL)
-
-        val axiBase = 0x43C00000L
-        //reset
-        writeAXI(axiBase + 0x10, 1)
-        writeAXI(axiBase + 0x10, 0)
-        //block device
-        writeAXI(axiBase + 0x38, 0)
-        writeAXI(axiBase + 0x3c, 0)
-        // SAI_CMD_WRITE
-        writeAXI(axiBase + 0x8, 1)
-        // addr 0x80000000
-        writeAXI(axiBase + 0x8, 0x80000000L)
-        writeAXI(axiBase + 0x8, 0x0L)
-        // 0x21 (33+1=34) chunks
-        writeAXI(axiBase + 0x8, 0x21L)
-        writeAXI(axiBase + 0x8, 0x0L)
-        // .text and .data of ibda.elf
-        writeAXI(axiBase + 0x8, 0x20637L)
-        writeAXI(axiBase + 0x8, 0x16061bL)
-        writeAXI(axiBase + 0x8, 0xe61613L)
-        writeAXI(axiBase + 0x8, 0x10000593L)
-        writeAXI(axiBase + 0x8, 0xb606b3L)
-        writeAXI(axiBase + 0x8, 0x870315fdL)
-        writeAXI(axiBase + 0x8, 0x1be30006L)
-        writeAXI(axiBase + 0x8, 0x4285feb0L)
-        writeAXI(axiBase + 0x8, 0x317L)
-        writeAXI(axiBase + 0x8, 0x2030313L)
-
-        writeAXI(axiBase + 0x8, 0x532023L)
-        writeAXI(axiBase + 0x8, 0xa001L)
-        writeAXI(axiBase + 0x8, 0x0L)
-        writeAXI(axiBase + 0x8, 0x0L)
-        writeAXI(axiBase + 0x8, 0x0L)
-        writeAXI(axiBase + 0x8, 0x0L)
-        writeAXI(axiBase + 0x8, 0x0L)
-        writeAXI(axiBase + 0x8, 0x0L)
-        writeAXI(axiBase + 0x8, 0x0L)
-        writeAXI(axiBase + 0x8, 0x0L)
-
-        writeAXI(axiBase + 0x8, 0x0L)
-        writeAXI(axiBase + 0x8, 0x0L)
-        writeAXI(axiBase + 0x8, 0x0L)
-        writeAXI(axiBase + 0x8, 0x0L)
-        writeAXI(axiBase + 0x8, 0x0L)
-        writeAXI(axiBase + 0x8, 0x0L)
-        writeAXI(axiBase + 0x8, 0x0L)
-        writeAXI(axiBase + 0x8, 0x0L)
-        writeAXI(axiBase + 0x8, 0x0L)
-        writeAXI(axiBase + 0x8, 0x0L)
-
-        writeAXI(axiBase + 0x8, 0x0L)
-        writeAXI(axiBase + 0x8, 0x0L)
-        writeAXI(axiBase + 0x8, 0x0L)
-        writeAXI(axiBase + 0x8, 0x0L)
-
-        // SAI_CMD_WRITE
-        writeAXI(axiBase + 0x8, 1)
-        // addr 0x2000000
-        writeAXI(axiBase + 0x8, 0x2000000L)
-        writeAXI(axiBase + 0x8, 0x0L)
-        // 0x0 (0+1=1) chunks
-        writeAXI(axiBase + 0x8, 0x0L)
-        writeAXI(axiBase + 0x8, 0x0L)
-        // 0x1
-        writeAXI(axiBase + 0x8, 0x1L)
-
-        var finished = false
-        while (!finished) {
-          // SAI_CMD_READ
-          writeAXI(axiBase + 0x8, 0)
-          // addr 0x80000040
-          writeAXI(axiBase + 0x8, 0x80000040L)
-          writeAXI(axiBase + 0x8, 0x0L)
-          // 0x1 (1+1=2) chunks
-          writeAXI(axiBase + 0x8, 0x1L)
-          writeAXI(axiBase + 0x8, 0x0L)
-          // wait until 2 chunks are available
-          while (readAXI(axiBase + 0x4L) < 2) {}
-          val c1 = readAXI(axiBase + 0x0L)
-          val c2 = readAXI(axiBase + 0x0L)
-          if (c1 != 0 || c2 != 0) {
-            finished = true
-          }
-
-        }
-
-      }
-  }
-}
