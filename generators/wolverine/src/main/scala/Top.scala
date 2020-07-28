@@ -241,6 +241,7 @@ class WolverineTop(implicit val p: Parameters) extends Module {
   val mem_write_addr = RegInit(0.U)
   val mem_write_id = RegInit(0.U)
   val mem_write_echo = RegInit(0.U)
+  val mem_write_len = RegInit(0.U)
   val mem_request_state = RegInit(sIDLE)
 
   val adapt_addr = RegInit(0.U)
@@ -358,12 +359,14 @@ class WolverineTop(implicit val p: Parameters) extends Module {
   top.io.mem_axi.map(master_axi => {
     dontTouch(master_axi)
 
-    val edge = top.test.memAXI4Node.in.head._2
-    val simplm = LazyModule(new AXISimplifier(edge))
-    val simp = Module(simplm.module)
-    val mem_axi = simplm.io_mem_axi.head
-    simplm.io_master_axi.head <> master_axi
-    dontTouch(mem_axi)
+//    val edge = top.test.memAXI4Node.in.head._2
+//    val simplm = LazyModule(new AXISimplifier(edge))
+//    val simp = Module(simplm.module)
+//    val mem_axi = simplm.io_mem_axi.head
+//    simplm.io_master_axi.head <> master_axi
+//    dontTouch(mem_axi)
+
+    val mem_axi = master_axi
 
 
     // supports only single beat 1-8byte transactions for now
@@ -371,8 +374,6 @@ class WolverineTop(implicit val p: Parameters) extends Module {
     when(mem_axi.ar.valid) {
       when(mem_axi.ar.bits.burst =/= "b01".U /*INC*/) {
         mem_axi_error_next := eBURST
-      }.elsewhen(mem_axi.ar.bits.len =/= 0.U /*1 beat*/) {
-        mem_axi_error_next := eLEN
       }
       // reads of different sizes are allowed
     }
@@ -381,8 +382,6 @@ class WolverineTop(implicit val p: Parameters) extends Module {
     when(mem_axi.aw.valid) {
       when(mem_axi.aw.bits.burst =/= "b01".U /*INC*/) {
         mem_axi_error_next := eBURST
-      }.elsewhen(mem_axi.aw.bits.len =/= 0.U /*1 beat*/) {
-        mem_axi_error_next := eLEN
       }.elsewhen(mem_axi.aw.bits.size =/= "b011".U /*8 bytes*/) {
         mem_axi_error_next := eSIZE
       }
@@ -406,11 +405,20 @@ class WolverineTop(implicit val p: Parameters) extends Module {
         // just always perform a quadword read
         mem_request_state := sIDLE
         io.mcReqValid := true.B
-        io.mcReqCmd := 1.U // quadword read
-        io.mcReqSCmd := 0.U
+        when(mem_axi.ar.bits.len === 0.U){
+          io.mcReqCmd := 1.U // quadword read
+          io.mcReqSCmd := 0.U
+        }.elsewhen(mem_axi.ar.bits.len === 7.U){
+          io.mcReqCmd := 7.U // multi-quadword read
+          io.mcReqSCmd := 0.U
+          // always 8 beats
+        }.otherwise{
+          mem_axi_error_next := eLEN
+        }
         io.mcReqSize := 3.U
         io.mcReqAddr := mem_alloc_addr + Cat(mem_axi.ar.bits.addr(31, 3), 0.U(3.W)) - mem_ram_base.U
-        io.mcReqRtnCtl := Cat(mem_axi.ar.bits.echo(AXI4FragLast), mem_axi.ar.bits.id)
+//        io.mcReqRtnCtl := Cat(mem_axi.ar.bits.echo(AXI4FragLast), mem_axi.ar.bits.id)
+        io.mcReqRtnCtl := mem_axi.ar.bits.id
       }
     }.elsewhen(mem_request_state === sWRITE) {
       mem_axi.aw.ready := can_request
@@ -418,31 +426,63 @@ class WolverineTop(implicit val p: Parameters) extends Module {
         mem_request_state := sWRITE_DATA
         mem_write_addr := mem_axi.aw.bits.addr
         mem_write_id := mem_axi.aw.bits.id
-        mem_write_echo := mem_axi.aw.bits.echo(AXI4FragLast)
+//        mem_write_echo := mem_axi.aw.bits.echo(AXI4FragLast)
+        mem_write_len := mem_axi.aw.bits.len
       }
     }.elsewhen(mem_request_state === sWRITE_DATA) {
       mem_axi.w.ready := can_request
       when(mem_axi.w.fire()) {
         io.mcReqValid := true.B
-        io.mcReqCmd := 2.U // write
-        io.mcReqSCmd := 0.U // 1 beat
-        when(BitPat("b11111111") === mem_axi.w.bits.strb){
+        when(mem_write_len === 0.U){
+          io.mcReqCmd := 2.U // write
+          io.mcReqSCmd := 0.U // 1 beat
+          when(BitPat("b11111111") === mem_axi.w.bits.strb){
+            io.mcReqSize := 3.U // 8 bytes
+            io.mcReqData := mem_axi.w.bits.data
+            io.mcReqAddr := mem_alloc_addr + mem_write_addr - mem_ram_base.U
+          }.elsewhen(BitPat("b00001111") === mem_axi.w.bits.strb){
+            io.mcReqSize := 2.U // 4 bytes
+            io.mcReqData := mem_axi.w.bits.data(31,0)
+            io.mcReqAddr := mem_alloc_addr + mem_write_addr - mem_ram_base.U
+          }.elsewhen(BitPat("b11110000") === mem_axi.w.bits.strb){
+            io.mcReqSize := 2.U // 4 bytes
+            io.mcReqData := mem_axi.w.bits.data(63,32)
+            io.mcReqAddr := mem_alloc_addr + mem_write_addr - mem_ram_base.U + 4.U
+          }.otherwise{
+            mem_axi_error_next := eMASK
+            io.mcReqValid := false.B
+          }
+        }.otherwise{
+          io.mcReqCmd := 6.U // write multi
+          // from https://github.com/maltanar/fpga-tidbits/blob/master/src/main/scala/fpgatidbits/platform-wrapper/convey/WolverinePlatformWrapper.scala
+          // AEMC WR64 - sub cmd
+          // Sub-command[2:0] indicates WR64 length, i.e.
+          // sub-command  | write size
+          //     0	    64 bytes
+          //     7	    56 bytes
+          //     6	    48 bytes
+          //     5	    40 bytes
+          //     4	    32 bytes
+          //     3	    24 bytes
+          //     2	    16 bytes
+          //     1	     8 bytes
+          io.mcReqSCmd := mem_write_len + 1.U
+          when(mem_write_len === 7.U){
+            io.mcReqSCmd := 0.U
+          }
           io.mcReqSize := 3.U // 8 bytes
           io.mcReqData := mem_axi.w.bits.data
           io.mcReqAddr := mem_alloc_addr + mem_write_addr - mem_ram_base.U
-        }.elsewhen(BitPat("b00001111") === mem_axi.w.bits.strb){
-          io.mcReqSize := 2.U // 4 bytes
-          io.mcReqData := mem_axi.w.bits.data(31,0)
-          io.mcReqAddr := mem_alloc_addr + mem_write_addr - mem_ram_base.U
-        }.elsewhen(BitPat("b11110000") === mem_axi.w.bits.strb){
-          io.mcReqSize := 2.U // 4 bytes
-          io.mcReqData := mem_axi.w.bits.data(63,32)
-          io.mcReqAddr := mem_alloc_addr + mem_write_addr - mem_ram_base.U + 4.U
-        }.otherwise{
-          mem_axi_error_next := eMASK
-          io.mcReqValid := false.B
+          //increment write addr for each beat
+          mem_write_addr := mem_write_addr + 8.U
+          when(BitPat("b11111111") =/= mem_axi.w.bits.strb){
+            mem_axi_error_next := eMASK
+            io.mcReqValid := false.B
+          }
+
         }
-        io.mcReqRtnCtl := Cat(mem_write_echo, mem_write_id)
+//        io.mcReqRtnCtl := Cat(mem_write_echo, mem_write_id)
+        io.mcReqRtnCtl := mem_write_id
         when(mem_axi.w.bits.last) {
           mem_request_state := sIDLE
         }
@@ -471,15 +511,14 @@ class WolverineTop(implicit val p: Parameters) extends Module {
     mem_axi.r.bits.last := 0.U
     mem_axi.r.bits.resp := 0.U
     mem_axi.r.bits.data := 0.U
-    // TODO: actually implement... - as part of id so there is no storage needed?
-    mem_axi.r.bits.echo(AXI4FragLast) := false.B
-    mem_axi.b.bits.echo(AXI4FragLast) := false.B
+//    mem_axi.r.bits.echo(AXI4FragLast) := false.B
+//    mem_axi.b.bits.echo(AXI4FragLast) := false.B
 
     when(response_queue.io.deq.valid) {
       when(response_queue.io.deq.bits.cmd === 3.U /*WR_CMP*/) {
         mem_axi.b.valid := true.B
         mem_axi.b.bits.id := response_queue.io.deq.bits.rtnCtl(memAxiIdBits - 1, 0)
-        mem_axi.b.bits.echo(AXI4FragLast) := response_queue.io.deq.bits.rtnCtl(memAxiIdBits, memAxiIdBits)
+//        mem_axi.b.bits.echo(AXI4FragLast) := response_queue.io.deq.bits.rtnCtl(memAxiIdBits, memAxiIdBits)
         mem_axi.b.bits.resp := "b00".U //OK
         when(mem_axi.b.fire()) {
           response_queue.io.deq.ready := true.B
@@ -487,8 +526,18 @@ class WolverineTop(implicit val p: Parameters) extends Module {
       }.elsewhen(response_queue.io.deq.bits.cmd === 2.U /*RD_DATA*/) {
         mem_axi.r.valid := true.B
         mem_axi.r.bits.id := response_queue.io.deq.bits.rtnCtl(memAxiIdBits - 1, 0)
-        mem_axi.r.bits.echo(AXI4FragLast) := response_queue.io.deq.bits.rtnCtl(memAxiIdBits, memAxiIdBits)
+//        mem_axi.r.bits.echo(AXI4FragLast) := response_queue.io.deq.bits.rtnCtl(memAxiIdBits, memAxiIdBits)
         mem_axi.r.bits.last := true.B // only single beat reads
+        mem_axi.r.bits.resp := "b00".U //OK
+        mem_axi.r.bits.data := response_queue.io.deq.bits.readData
+        when(mem_axi.r.fire()) {
+          response_queue.io.deq.ready := true.B
+        }
+      }.elsewhen(response_queue.io.deq.bits.cmd === 7.U /*RD64_DATA*/) {
+        mem_axi.r.valid := true.B
+        mem_axi.r.bits.id := response_queue.io.deq.bits.rtnCtl(memAxiIdBits - 1, 0)
+//        mem_axi.r.bits.echo(AXI4FragLast) := response_queue.io.deq.bits.rtnCtl(memAxiIdBits, memAxiIdBits)
+        mem_axi.r.bits.last := response_queue.io.deq.bits.scmd === 7.U // final beat
         mem_axi.r.bits.resp := "b00".U //OK
         mem_axi.r.bits.data := response_queue.io.deq.bits.readData
         when(mem_axi.r.fire()) {
