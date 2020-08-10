@@ -86,17 +86,17 @@ ifeq ($(SUB_PROJECT),zynq)
 	TB                ?= TestDriver
 	TOP               ?= FPGAZynqTop
 endif
-# targeting zynq fpgas
+# targeting wolverine fpgas
 ifeq ($(SUB_PROJECT),wolverine)
 	SBT_PROJECT       ?= wolverine
-	MODEL             ?= WolverineTop
-	VLOG_MODEL        ?= WolverineTop
+	MODEL             ?= WolverineTestHarness
+	VLOG_MODEL        ?= WolverineTestHarness
 	MODEL_PACKAGE     ?= $(SBT_PROJECT)
 	CONFIG            ?= RocketWolverineConfig
 	CONFIG_PACKAGE    ?= $(SBT_PROJECT)
 	GENERATOR_PACKAGE ?= chipyard
 	TB                ?= TestDriver
-	TOP               ?= FPGAZynqTop
+	TOP               ?= WolverineTop
 endif
 # Stand-in firechip variables:
 # TODO: need a seperate generator and test harnesses for each target
@@ -154,7 +154,7 @@ sim_common_files       ?= $(build_dir)/sim_files.common.f
 #########################################################################################
 # java arguments used in sbt
 #########################################################################################
-JAVA_HEAP_SIZE ?= 6G
+JAVA_HEAP_SIZE ?= 10G
 JAVA_ARGS ?= -Xmx$(JAVA_HEAP_SIZE) -Xss8M -XX:MaxPermSize=256M
 
 #########################################################################################

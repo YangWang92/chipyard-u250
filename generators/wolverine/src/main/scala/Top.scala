@@ -61,7 +61,7 @@ class ConveyMemMasterIF(rtnCtlBits: Int) extends Bundle {
 }
 
 // wrapper for Convey Verilog personality
-class TopWrapperInterface(numMemPorts: Int, rtnctl: Int) extends Bundle {
+class TopWrapperInterface(val numMemPorts: Int, val rtnctl: Int) extends Bundle {
   // dispatch interface
   val dispInstValid = Input(Bool())
   val dispInstData = Input(UInt(5.W))
@@ -603,40 +603,11 @@ class RocketAxiRamWolverineConfig extends Config( // rocket should be able to ru
   new WithExtMemSize(0x00040000L) ++
     new RocketZynqConfig)
 
-
-//class TinyRocketWolverineConfig extends Config(
-//  new WithNoMemPort ++
-//  new WithNMemoryChannels(0) ++
-//  new WithNBanks(0) ++
-//  new With1Tiny64Core ++
-//  new RocketZynqConfig
-//)
-
-//class With1Tiny64Core extends Config((site, here, up) => {
-//  case XLen => 64
-//  case RocketTilesKey => List(RocketTileParams(
-//    core = RocketCoreParams(
-//      useVM = false,
-//      fpu = None,
-//      mulDiv = Some(MulDivParams(mulUnroll = 8))),
-//    btb = None,
-//    dcache = Some(DCacheParams(
-//      rowBits = site(SystemBusKey).beatBits,
-//      nSets = 256, // 16Kb scratchpad
-//      nWays = 1,
-//      nTLBEntries = 4,
-//      nMSHRs = 0,
-//      blockBytes = site(CacheBlockBytes),
-//      scratch = Some(0x80000000L))),
-//    icache = Some(ICacheParams(
-//      rowBits = site(SystemBusKey).beatBits,
-//      nSets = 64,
-//      nWays = 1,
-//      nTLBEntries = 4,
-//      blockBytes = site(CacheBlockBytes))))
-//  )
-//})
-
 class RocketWolverineConfig extends Config( // rocket should be able to run at ~80MHz in this config - needs to also be changed in clocking.vh
   new With1GbRam ++
     new RocketZynqConfig)
+
+class MegaBoomWolverineConfig extends Config(
+  new WithBenchmarkConfig ++
+  new MegaBoomZynqConfig
+)
