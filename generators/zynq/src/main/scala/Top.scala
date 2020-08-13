@@ -4,7 +4,7 @@ import chipyard.{Subsystem, SubsystemModuleImp}
 import chisel3._
 import freechips.rocketchip.amba.axi4.AXI4Bundle
 import freechips.rocketchip.config.{Field, Parameters}
-import freechips.rocketchip.devices.debug.{HasPeripheryDebug, HasPeripheryDebugModuleImp}
+import freechips.rocketchip.devices.debug.{Debug, HasPeripheryDebug, HasPeripheryDebugModuleImp}
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
 import freechips.rocketchip.subsystem._
@@ -40,6 +40,7 @@ class Top(implicit val p: Parameters) extends Module {
   adapter.io.fan_rpm := io.fan_rpm
 
   target.debug.map(_ := DontCare) //TODO: figure out if we need this! - probably not due to NoDebug
+  Debug.connectDebugClockAndReset(target.debug, clock)
 //  target.tieOffInterrupts()
   target.dontTouchPorts()
   target.reset := adapter.io.sys_reset

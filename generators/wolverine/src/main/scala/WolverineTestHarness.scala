@@ -32,4 +32,8 @@ class SimWolverineTestHarness extends BlackBox with HasBlackBoxPath {
   addPath("/home/david/git/chipyard-dev/generators/wolverine/src/resources/csrc/SimWolverineTestHarness.cc")
   addPath("/home/david/git/chipyard-dev/generators/wolverine/src/resources/csrc/SimWolverineTestHarness.h")
   addPath("/home/david/git/chipyard-dev/generators/wolverine/src/resources/csrc/SimWolverineMemory.cc")
+  addPath("/home/david/git/chipyard-dev/generators/wolverine/src/resources/csrc/wolverine_sim_driver.cc")
+  addPath("/home/david/git/chipyard-dev/generators/wolverine/src/resources/csrc/wolverine_sim_driver.h")
+  addPath("/home/david/git/chipyard-dev/generators/wolverine/src/resources/csrc/blkdev.cc")
+  addPath("/home/david/git/chipyard-dev/generators/wolverine/src/resources/csrc/blkdev.h")
 }

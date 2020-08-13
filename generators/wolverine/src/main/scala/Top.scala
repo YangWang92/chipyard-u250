@@ -1,6 +1,7 @@
 package wolverine
 
 import chipsalliance.rocketchip.config.{Config, Parameters}
+import chipyard.iobinders.{WithTieOffInterrupts, WithTiedOffDebug}
 import chipyard.{Subsystem, SubsystemModuleImp}
 import chisel3._
 import chisel3.experimental.IO
@@ -187,7 +188,7 @@ class WolverineTop(implicit val p: Parameters) extends Module {
   val io = IO(new TopWrapperInterface(numMemPorts, idBits))
   // registers
   val regCnt = 8
-  val regs = Reg(Vec(regCnt, UInt(64.W)))
+  val regs = RegInit(VecInit(Seq.fill(regCnt)(0.U(64.W))))
 
   val stall_reg = regs(0)
 
@@ -272,6 +273,7 @@ class WolverineTop(implicit val p: Parameters) extends Module {
   when(io.csrAddr === regCnt.U && io.csrWrValid) {
     val write = io.csrWrData(63)
     adapt_addr := io.csrWrData(62, 32)
+    assert(adapt_state === sIDLE, "csr-axi operation still ongoing")
     when(write) {
       adapt_state := sWRITE
       adapt_wData := io.csrWrData(31, 0)
@@ -605,6 +607,8 @@ class RocketAxiRamWolverineConfig extends Config( // rocket should be able to ru
 
 class RocketWolverineConfig extends Config( // rocket should be able to run at ~80MHz in this config - needs to also be changed in clocking.vh
   new With1GbRam ++
+    new WithTiedOffDebug ++
+    new WithTieOffInterrupts ++
     new RocketZynqConfig)
 
 class MegaBoomWolverineConfig extends Config(
