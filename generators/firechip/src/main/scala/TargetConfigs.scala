@@ -127,6 +127,15 @@ class FireSimQuadRocketConfig extends Config(
 
 
 //*****************************************************************
+// Boom config, base off chipyard's MegaBoomConfig
+//*****************************************************************
+class FireSimMegaBoomConfig extends Config(
+  new WithDefaultFireSimBridges ++
+  new WithDefaultMemModel ++
+  new WithFireSimConfigTweaks ++
+  new chipyard.MegaBoomConfig)
+
+//*****************************************************************
 // Boom config, base off chipyard's LargeBoomConfig
 //*****************************************************************
 class FireSimLargeBoomConfig extends Config(
