@@ -161,5 +161,5 @@ class WithNoDmaFireSimBridges extends Config(
   new WithUARTBridge ++
   new WithBlockDeviceBridge ++
   new WithFASEDBridge ++
-  new WithFireSimMultiCycleRegfile ++
+  new WithFireSimMultiCycleRegfile
 )
