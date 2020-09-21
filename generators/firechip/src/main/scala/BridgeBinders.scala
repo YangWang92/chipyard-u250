@@ -78,6 +78,11 @@ class WithTracerVBridge extends ComposeIOBinder({
     system.traceIO.foreach(_.traces.map(tileTrace => TracerVBridge(tileTrace)(system.p))); Nil
 })
 
+class WithTracerSBridge extends ComposeIOBinder({
+  (system: CanHaveTraceIOModuleImp) =>
+    system.traceIO.foreach(_.traces.map(tileTrace => TracerSBridge(tileTrace)(system.p))); Nil
+})
+
 
 
 class WithDromajoBridge extends ComposeIOBinder({
@@ -161,5 +166,6 @@ class WithNoDmaFireSimBridges extends Config(
   new WithUARTBridge ++
   new WithBlockDeviceBridge ++
   new WithFASEDBridge ++
-  new WithFireSimMultiCycleRegfile
+  new WithFireSimMultiCycleRegfile ++
+  new WithTracerSBridge
 )

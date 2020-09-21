@@ -142,7 +142,7 @@ class FireSimSmallSystemConfig extends Config(
 
 // Should fit on all supported hosts
 class FireSimNoDmaSystemConfig extends Config(
-  new WithDefaultFireSimBridges ++
+  new WithNoDmaFireSimBridges ++
   new WithDefaultMemModel ++
   new WithBootROM ++
   new WithPeripheryBusFrequency(BigInt(3200000000L)) ++
@@ -152,6 +152,7 @@ class FireSimNoDmaSystemConfig extends Config(
   new testchipip.WithTSI ++
   new testchipip.WithBlockDevice ++
   new chipyard.config.WithUART ++
+  new chipyard.config.WithTraceIO ++
   new freechips.rocketchip.subsystem.WithInclusiveCache(nWays = 2, capacityKB = 64) ++
   new chipyard.RocketConfig)
 
