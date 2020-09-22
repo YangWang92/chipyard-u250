@@ -142,7 +142,6 @@ class FireSimSmallSystemConfig extends Config(
 
 // Should fit on all supported hosts
 class FireSimNoDmaSystemConfig extends Config(
-  new WithSynthAsserts ++
   new WithNoDmaFireSimBridges ++
   new WithDefaultMemModel ++
   new WithBootROM ++
