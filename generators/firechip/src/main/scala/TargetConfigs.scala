@@ -158,7 +158,8 @@ class FireSimNoDmaSystemConfig extends Config(
 
 class FireSimNoDmaMegaBoomConfig extends Config(
   new WithNoDmaFireSimBridges ++
-  new FRFCFS16GBQuadRankLLC4MB3Div ++ //3.2GHz/3 = 1067MHz mem - DDR3 2133
+//  new FRFCFS16GBQuadRankLLC4MB3Div ++ //3.2GHz/3 = 1067MHz mem - DDR3 2133
+  new WithDefaultMemModel ++
   new WithBootROM ++
   new WithPeripheryBusFrequency(BigInt(3200000000L)) ++
   new WithoutClockGating ++
