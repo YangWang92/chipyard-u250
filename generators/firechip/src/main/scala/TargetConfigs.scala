@@ -171,6 +171,21 @@ class FireSimNoDmaMegaBoomConfig extends Config(
   new chipyard.config.WithTraceIO ++
   new chipyard.MegaBoomConfig)
 
+class FireSimNoDmaLargeBoomConfig extends Config(
+  new WithNoDmaFireSimBridges ++
+//  new FRFCFS16GBQuadRankLLC4MB3Div ++ //3.2GHz/3 = 1067MHz mem - DDR3 2133
+  new WithDefaultMemModel ++
+  new WithBootROM ++
+  new WithPeripheryBusFrequency(BigInt(3200000000L)) ++
+  new WithoutClockGating ++
+  new WithoutTLMonitors ++
+  new freechips.rocketchip.subsystem.WithExtMemSize(1 << 28) ++
+  new testchipip.WithTSI ++
+  new testchipip.WithBlockDevice ++
+  new chipyard.config.WithUART ++
+  new chipyard.config.WithTraceIO ++
+  new chipyard.LargeBoomConfig)
+
 //*****************************************************************
 // Boom config, base off chipyard's LargeBoomConfig
 //*****************************************************************
