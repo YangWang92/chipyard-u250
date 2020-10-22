@@ -156,8 +156,38 @@ class FireSimNoDmaSystemConfig extends Config(
   new freechips.rocketchip.subsystem.WithInclusiveCache(nWays = 2, capacityKB = 64) ++
   new chipyard.RocketConfig)
 
+class FireSimNoDmaDirectMemSystemConfig extends Config(
+  new WithNoDmaDirectMemFireSimBridges ++
+  new WithDefaultMemModel ++
+  new WithBootROM ++
+  new WithPeripheryBusFrequency(BigInt(3200000000L)) ++
+  new WithoutClockGating ++
+  new WithoutTLMonitors ++
+  new freechips.rocketchip.subsystem.WithExtMemSize(1 << 28) ++
+  new testchipip.WithTSI ++
+  new testchipip.WithBlockDevice ++
+  new chipyard.config.WithUART ++
+  new chipyard.config.WithTraceIO ++
+  new freechips.rocketchip.subsystem.WithInclusiveCache(nWays = 2, capacityKB = 64) ++
+  new chipyard.RocketConfig)
+
 class FireSimNoDmaMegaBoomConfig extends Config(
   new WithNoDmaFireSimBridges ++
+//  new FRFCFS16GBQuadRankLLC4MB3Div ++ //3.2GHz/3 = 1067MHz mem - DDR3 2133
+  new WithDefaultMemModel ++
+  new WithBootROM ++
+  new WithPeripheryBusFrequency(BigInt(3200000000L)) ++
+  new WithoutClockGating ++
+  new WithoutTLMonitors ++
+  new freechips.rocketchip.subsystem.WithExtMemSize(0x800000000L) ++ // 32GB
+  new testchipip.WithTSI ++
+  new testchipip.WithBlockDevice ++
+  new chipyard.config.WithUART ++
+  new chipyard.config.WithTraceIO ++
+  new chipyard.MegaBoomConfig)
+
+class FireSimNoDmaDirectMemMegaBoomConfig extends Config(
+  new WithNoDmaDirectMemFireSimBridges ++
 //  new FRFCFS16GBQuadRankLLC4MB3Div ++ //3.2GHz/3 = 1067MHz mem - DDR3 2133
   new WithDefaultMemModel ++
   new WithBootROM ++

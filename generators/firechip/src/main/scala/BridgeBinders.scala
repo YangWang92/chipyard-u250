@@ -4,31 +4,27 @@ package firesim.firesim
 
 import chisel3._
 import chisel3.experimental.annotate
-
-import freechips.rocketchip.config.{Field, Config, Parameters}
-import freechips.rocketchip.diplomacy.{LazyModule}
+import freechips.rocketchip.config.{Config, Field, Parameters}
+import freechips.rocketchip.diplomacy.LazyModule
 import freechips.rocketchip.devices.debug.{Debug, HasPeripheryDebugModuleImp}
-import freechips.rocketchip.subsystem.{CanHaveMasterAXI4MemPort, HasExtInterruptsModuleImp, BaseSubsystem}
-import freechips.rocketchip.tile.{RocketTile}
+import freechips.rocketchip.subsystem.{BaseSubsystem, CanHaveMasterAXI4MemPort, HasExtInterruptsModuleImp}
+import freechips.rocketchip.tile.RocketTile
 import sifive.blocks.devices.uart.HasPeripheryUARTModuleImp
-import sifive.blocks.devices.gpio.{HasPeripheryGPIOModuleImp}
-
-import testchipip.{CanHavePeripherySerialModuleImp, CanHavePeripheryBlockDeviceModuleImp}
+import sifive.blocks.devices.gpio.HasPeripheryGPIOModuleImp
+import testchipip.{CanHavePeripheryBlockDeviceModuleImp, CanHavePeripherySerialModuleImp}
 import icenet.CanHavePeripheryIceNICModuleImp
-
 import junctions.{NastiKey, NastiParameters}
-import midas.models.{FASEDBridge, AXI4EdgeSummary, CompleteConfig}
-import midas.targetutils.{MemModelAnnotation}
+import midas.models.{AXI4EdgeSummary, CompleteConfig, FASEDBridge}
+import midas.targetutils.MemModelAnnotation
 import firesim.bridges._
 import firesim.configs.MemModelKey
 import tracegen.HasTraceGenTilesModuleImp
 import ariane.ArianeTile
-
-import boom.common.{BoomTile}
-
-import chipyard.iobinders.{IOBinders, OverrideIOBinder, ComposeIOBinder}
-import chipyard.{HasChipyardTilesModuleImp}
-import testchipip.{CanHaveTraceIOModuleImp}
+import boom.common.BoomTile
+import chipyard.iobinders.{ComposeIOBinder, IOBinders, OverrideIOBinder}
+import chipyard.HasChipyardTilesModuleImp
+import midas.models.dram.DirectMemoryBridge
+import testchipip.CanHaveTraceIOModuleImp
 
 object MainMemoryConsts {
   val regionNamePrefix = "MainMemory"
@@ -64,6 +60,23 @@ class WithFASEDBridge extends OverrideIOBinder({
                                      axi4.ar.bits.addr.getWidth,
                                      axi4.ar.bits.id.getWidth)
       FASEDBridge(system.module.clock, axi4, system.module.reset.toBool,
+        CompleteConfig(p(firesim.configs.MemModelKey),
+                       nastiKey,
+                       Some(AXI4EdgeSummary(edge)),
+                       Some(MainMemoryConsts.globalName)))
+    })
+    Nil
+  }
+})
+
+class WithDirectMemoryBridge extends OverrideIOBinder({
+  (system: CanHaveMasterAXI4MemPort with BaseSubsystem) => {
+    implicit val p = system.p
+    (system.mem_axi4 zip system.memAXI4Node.in).foreach({ case (axi4, (_, edge)) =>
+      val nastiKey = NastiParameters(axi4.r.bits.data.getWidth,
+                                     axi4.ar.bits.addr.getWidth,
+                                     axi4.ar.bits.id.getWidth)
+      DirectMemoryBridge(system.module.clock, axi4, system.module.reset.toBool,
         CompleteConfig(p(firesim.configs.MemModelKey),
                        nastiKey,
                        Some(AXI4EdgeSummary(edge)),
@@ -166,6 +179,18 @@ class WithNoDmaFireSimBridges extends Config(
   new WithUARTBridge ++
   new WithBlockDeviceBridge ++
   new WithFASEDBridge ++
+  new WithFireSimMultiCycleRegfile ++
+  new WithTracerSBridge
+)
+
+class WithNoDmaDirectMemFireSimBridges extends Config(
+  new WithTiedOffSystemGPIO ++
+  new WithTiedOffSystemDebug ++
+  new WithTiedOffSystemInterrupts ++
+  new WithSerialBridge ++
+  new WithUARTBridge ++
+  new WithBlockDeviceBridge ++
+  new WithDirectMemoryBridge ++
   new WithFireSimMultiCycleRegfile ++
   new WithTracerSBridge
 )
