@@ -148,7 +148,7 @@ class FireSimNoDmaSystemConfig extends Config(
   new WithPeripheryBusFrequency(BigInt(3200000000L)) ++
   new WithoutClockGating ++
   new WithoutTLMonitors ++
-  new freechips.rocketchip.subsystem.WithExtMemSize(1 << 28) ++
+  new freechips.rocketchip.subsystem.WithExtMemSize(0x800000000L) ++ // 32GB
   new testchipip.WithTSI ++
   new testchipip.WithBlockDevice ++
   new chipyard.config.WithUART ++
@@ -164,7 +164,7 @@ class FireSimNoDmaMegaBoomConfig extends Config(
   new WithPeripheryBusFrequency(BigInt(3200000000L)) ++
   new WithoutClockGating ++
   new WithoutTLMonitors ++
-  new freechips.rocketchip.subsystem.WithExtMemSize(1 << 28) ++
+  new freechips.rocketchip.subsystem.WithExtMemSize(0x800000000L) ++ // 32GB
   new testchipip.WithTSI ++
   new testchipip.WithBlockDevice ++
   new chipyard.config.WithUART ++
@@ -179,7 +179,7 @@ class FireSimNoDmaLargeBoomConfig extends Config(
   new WithPeripheryBusFrequency(BigInt(3200000000L)) ++
   new WithoutClockGating ++
   new WithoutTLMonitors ++
-  new freechips.rocketchip.subsystem.WithExtMemSize(1 << 28) ++
+  new freechips.rocketchip.subsystem.WithExtMemSize(0x800000000L) ++ // 32GB
   new testchipip.WithTSI ++
   new testchipip.WithBlockDevice ++
   new chipyard.config.WithUART ++
