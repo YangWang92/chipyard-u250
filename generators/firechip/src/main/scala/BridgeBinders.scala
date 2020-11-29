@@ -21,7 +21,7 @@ import midas.models.{FASEDBridge, AXI4EdgeSummary, CompleteConfig}
 import midas.targetutils.{MemModelAnnotation, EnableModelMultiThreadingAnnotation}
 import firesim.bridges._
 import firesim.configs.MemModelKey
-import tracegen.HasTraceGenTilesModuleImp
+import tracegen.{TraceGenSystemModuleImp}
 import ariane.ArianeTile
 
 import boom.common.{BoomTile}
