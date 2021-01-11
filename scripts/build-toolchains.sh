@@ -109,7 +109,7 @@ else
         *) false ;;
         esac; ) || die 'obsolete make version; need GNU make 4.x or later'
 
-    module_prepare riscv-gnu-toolchain qemu
+    # module_prepare riscv-gnu-toolchain qemu
     module_build riscv-gnu-toolchain --prefix="${RISCV}" --with-cmodel=medany
     echo '==>  Building GNU/Linux toolchain'
     module_make riscv-gnu-toolchain linux
@@ -128,7 +128,7 @@ module_all riscv-tests --prefix="${RISCV}/riscv64-unknown-elf"
 
 SRCDIR="$(pwd)/toolchains" module_all libgloss --prefix="${RISCV}/riscv64-unknown-elf" --host=riscv64-unknown-elf
 
-SRCDIR="$(pwd)/toolchains" module_all qemu --prefix="${RISCV}" --target-list=riscv64-softmmu
+# SRCDIR="$(pwd)/toolchains" module_all qemu --prefix="${RISCV}" --target-list=riscv64-softmmu
 
 # make Dromajo
 git submodule update --init $CHIPYARD_DIR/tools/dromajo/dromajo-src
