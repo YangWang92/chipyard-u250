@@ -109,7 +109,7 @@ else
         *) false ;;
         esac; ) || die 'obsolete make version; need GNU make 4.x or later'
 
-    # module_prepare riscv-gnu-toolchain qemu
+    module_prepare riscv-gnu-toolchain
     module_build riscv-gnu-toolchain --prefix="${RISCV}" --with-cmodel=medany
     echo '==>  Building GNU/Linux toolchain'
     module_make riscv-gnu-toolchain linux
