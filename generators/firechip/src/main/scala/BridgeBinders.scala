@@ -187,3 +187,12 @@ class WithDefaultFireSimBridges extends Config(
   new WithTracerVBridge ++
   new WithFireSimIOCellModels
 )
+
+class WithNoDmaFireSimBridges extends Config(
+  new WithSerialBridge ++
+  new WithUARTBridge ++
+  new WithBlockDeviceBridge ++
+  new WithFASEDBridge ++
+  new WithFireSimMultiCycleRegfile ++
+  new WithFireSimIOCellModels
+)
