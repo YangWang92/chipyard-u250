@@ -130,11 +130,27 @@ class FireSimQuadRocketConfig extends Config(
 // Rocket for Wolverine
 class FireSimNoDmaSystemConfig extends Config(
   new WithNoDmaFireSimBridges ++
-  new WithDefaultMemModel ++
-  new freechips.rocketchip.subsystem.WithExtMemSize(0x800000000L) ++ // 32GB
-  new freechips.rocketchip.subsystem.WithInclusiveCache(nWays = 2, capacityKB = 64) ++
-  new WithFireSimConfigTweaks ++
-  new chipyard.RocketConfig)
+    new WithDefaultMemModel ++
+    new freechips.rocketchip.subsystem.WithExtMemSize(0x800000000L) ++ // 32GB
+    new freechips.rocketchip.subsystem.WithInclusiveCache(nWays = 2, capacityKB = 64) ++
+    new WithFireSimConfigTweaks ++
+    new chipyard.RocketConfig)
+
+// LargeBoom for Wolverine
+class FireSimNoDmaLargeBoomConfig extends Config(
+  new WithNoDmaFireSimBridges ++
+    new WithDefaultMemModel ++
+    new freechips.rocketchip.subsystem.WithExtMemSize(0x800000000L) ++ // 32GB
+    new WithFireSimConfigTweaks ++
+    new chipyard.LargeBoomConfig)
+
+// MegaBoom for Wolverine
+class FireSimNoDmaMegaBoomConfig extends Config(
+  new WithNoDmaFireSimBridges ++
+    new WithDefaultMemModel ++
+    new freechips.rocketchip.subsystem.WithExtMemSize(0x800000000L) ++ // 32GB
+    new WithFireSimConfigTweaks ++
+    new chipyard.MegaBoomConfig)
 
 // A stripped down configuration that should fit on all supported hosts.
 // Flat to avoid having to reorganize the config class hierarchy to remove certain features
