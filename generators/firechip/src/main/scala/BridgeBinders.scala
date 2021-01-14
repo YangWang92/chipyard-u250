@@ -66,12 +66,12 @@ class WithFireSimIOCellModels extends Config((site, here, up) => {
   case IOCellKey => FireSimIOCellParams()
 })
 
-class WithSerialBridge extends OverrideHarnessBinder({
+class WithSerialBridge(useLoadMem :Boolean) extends OverrideHarnessBinder({
   (system: CanHavePeripheryTLSerial, th: FireSim, ports: Seq[ClockedIO[SerialIO]]) => {
     ports.map { port =>
       implicit val p = GetSystemParameters(system)
       val ram = SerialAdapter.connectHarnessRAM(system.serdesser.get, port, th.harnessReset)
-      SerialBridge(port.clock, ram.module.io.tsi_ser, p(ExtMem).map(_ => MainMemoryConsts.globalName))
+      SerialBridge(port.clock, ram.module.io.tsi_ser, if(useLoadMem) p(ExtMem).map(_ => MainMemoryConsts.globalName) else None)
     }
     Nil
   }
@@ -177,7 +177,7 @@ class WithFireSimFAME5 extends ComposeIOBinder({
 
 // Shorthand to register all of the provided bridges above
 class WithDefaultFireSimBridges extends Config(
-  new WithSerialBridge ++
+  new WithSerialBridge(true) ++
   new WithNICBridge ++
   new WithUARTBridge ++
   new WithBlockDeviceBridge ++
@@ -189,7 +189,7 @@ class WithDefaultFireSimBridges extends Config(
 )
 
 class WithNoDmaFireSimBridges extends Config(
-  new WithSerialBridge ++
+  new WithSerialBridge(false) ++
   new WithUARTBridge ++
   new WithBlockDeviceBridge ++
   new WithFASEDBridge ++
