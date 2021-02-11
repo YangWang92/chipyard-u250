@@ -5,30 +5,26 @@ package firesim.firesim
 import chisel3._
 import chisel3.experimental.annotate
 import chisel3.util.experimental.BoringUtils
-
-import freechips.rocketchip.config.{Field, Config, Parameters}
-import freechips.rocketchip.diplomacy.{LazyModule}
+import freechips.rocketchip.config.{Config, Field, Parameters}
+import freechips.rocketchip.diplomacy.LazyModule
 import freechips.rocketchip.devices.debug.{Debug, HasPeripheryDebugModuleImp}
-import freechips.rocketchip.amba.axi4.{AXI4Bundle}
+import freechips.rocketchip.amba.axi4.AXI4Bundle
 import freechips.rocketchip.subsystem._
-import freechips.rocketchip.tile.{RocketTile}
+import freechips.rocketchip.tile.RocketTile
 import sifive.blocks.devices.uart._
-
 import testchipip._
-import icenet.{CanHavePeripheryIceNIC, SimNetwork, NicLoopback, NICKey, NICIOvonly}
-
+import icenet.{CanHavePeripheryIceNIC, NICIOvonly, NICKey, NicLoopback, SimNetwork}
 import junctions.{NastiKey, NastiParameters}
-import midas.models.{FASEDBridge, AXI4EdgeSummary, CompleteConfig}
-import midas.targetutils.{MemModelAnnotation, EnableModelMultiThreadingAnnotation}
+import midas.models.{AXI4EdgeSummary, CompleteConfig, FASEDBridge}
+import midas.targetutils.{EnableModelMultiThreadingAnnotation, MemModelAnnotation}
 import firesim.bridges._
 import firesim.configs.MemModelKey
-import tracegen.{TraceGenSystemModuleImp}
+import tracegen.TraceGenSystemModuleImp
 import cva6.CVA6Tile
-
-import boom.common.{BoomTile}
+import boom.common.BoomTile
 import barstools.iocell.chisel._
-import chipyard.iobinders.{IOBinders, OverrideIOBinder, ComposeIOBinder, GetSystemParameters, IOCellKey}
-import chipyard.{HasHarnessSignalReferences}
+import chipyard.iobinders.{ComposeIOBinder, GetSystemParameters, IOBinders, IOCellKey, OverrideIOBinder}
+import chipyard.HasHarnessSignalReferences
 import chipyard.harness._
 
 object MainMemoryConsts {
@@ -130,6 +126,13 @@ class WithTracerVBridge extends ComposeHarnessBinder({
   }
 })
 
+class WithTracerSBridge extends ComposeHarnessBinder({
+  (system: CanHaveTraceIOModuleImp, th: HasHarnessSignalReferences, ports: Seq[TraceOutputTop]) => {
+    ports.map { p => p.traces.map(tileTrace => TracerSBridge(tileTrace)(system.p)) }
+    Nil
+  }
+})
+
 class WithDromajoBridge extends ComposeHarnessBinder({
   (system: CanHaveTraceIOModuleImp, th: FireSim, ports: Seq[TraceOutputTop]) =>
     ports.map { p => p.traces.map(tileTrace => DromajoBridge(tileTrace)(system.p)) }; Nil
@@ -194,5 +197,6 @@ class WithNoDmaFireSimBridges extends Config(
   new WithBlockDeviceBridge ++
   new WithFASEDBridge ++
   new WithFireSimMultiCycleRegfile ++
+  new WithTracerSBridge ++
   new WithFireSimIOCellModels
 )
