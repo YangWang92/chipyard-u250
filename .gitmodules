@@ -28,7 +28,7 @@
 	shallow = true
 [submodule "sims/firesim"]
 	path = sims/firesim
-	url = https://github.com/firesim/firesim.git
+	url = https://github.com/YangWang92/firesim-u250.git
 	shallow = true
 [submodule "generators/icenet"]
 	path = generators/icenet
