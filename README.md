@@ -1,34 +1,10 @@
-# allocating an FPGA node
-Should be run in screen on login node. Close the screen to end the allocation prematurely
-```
-# allocate a node exclusiveley for 1000 hours
-salloc --nodes=1 --exclusive --partition=CPUQ --reservation=fpga --account=ie-idi --time=1000:00:00
-```
+# Steps for compiling chipyard projects on U250
 
-# git repos assumed to be in ~/git
-```
-cd ~/git
-```
+* copy the u250 board files into vivado install (Xilinx/Vivado/2021.1/data/boards/board_files/au250) - *only once per machine* 
+* can be downloaded from the alveo lounge https://www.xilinx.com/member/alveo-vivado.html requires registration
+* the board files include an apache licenses
 
-# install Xilinx XDMA driver - *only once per machine*
-```
-git clone https://github.com/Xilinx/dma_ip_drivers
-cd dma_ip_drivers/XDMA/linux-kernel/xdma/
-sudo make install
-sudo modprobe xdma
-modinfo xdma
-cd ~/git
-```
-
-# copy the u250 board files into vivado install (Xilinx/Vivado/2021.1/data/boards/board_files/au250) - *only once per machine* 
-# can be downloaded from the alveo lounge https://www.xilinx.com/member/alveo-vivado.html requires registration
-# the board files include an apache licenses
-
-# install the xilinx jtag driver (adjust path) - *only once per machine*
-cd Xilinx/Vivado/2021.1/data/xicom/cable_drivers/lin64/install_script/install_drivers
-sudo ./install_drivers
-
-# Chipyard dependencies for Centos 8 - *only once per machine*
+## Chipyard dependencies for Centos 8 - *only once per machine*
 ```
 sudo yum groupinstall -y "Development tools"
 sudo yum install -y gmp-devel mpfr-devel libmpc-devel zlib-devel vim git java java-devel
@@ -65,61 +41,36 @@ autoconf && ./configure && make -j$(nproc) && sudo make install
 cd ..
 ```
 
-# clone and install Chipyard - *each user*
+## clone and install Chipyard
 ```
-git clone https://github.com/ucb-bar/chipyard
-cd chipyard
+git clone https://github.com/YangWang92/chipyard-u250.git
+cd chipyard-u250
 ./scripts/init-submodules-no-riscv-tools.sh
 export MAKEFLAGS=-j20
 ./scripts/build-toolchains.sh riscv-tools # for a normal risc-v toolchain
 source env.sh
+
 # install Firesim
 cd sims/firesim
+git checkout 1.51_u250
 ./build-setup.sh --library
 unset MAKEFLAGS
 source env.sh
 # try it out
 cd sim
-make run-verilator-debug  SIM_BINARY=~/git/chipyard/toolchains/riscv-tools/riscv-tests/build/benchmarks/dhrystone.riscv
+make run-verilator-debug  SIM_BINARY=YOUR_RISCV_TOOLCHAINS
 ```
 
-## switch to NTNU firesim repo
+# build bitstream (fpga) for design
 ```
-cd ~/git/chipyard/sims/firesim/
-git remote rename origin upstream
-git remote add origin https://github.com/EECS-NTNU/firesim
-git checkout origin/u250
-```
-
-# build host driver (u250-driver) and bitstream (fpga) for design
-```
-source /cluster/projects/itea_lille-ie-idi/env/xilinx.sh
-source /cluster/projects/itea_lille-ie-idi/env/xrt.sh
-cd ~/git/chipyard
-source env.sh
-cd sims/firesim
-source env.sh
-cd sim
 make u250-driver fpga PLATFORM=u250 PLATFORM_CONFIG=BaseF1Config1Mem
+
+
 # add TARGET_CONFIG= to select a different design, PLATFORM_CONFIG=BaseF1Config1Mem_F50MHz for 50MHz clock and JAVA_HEAP_SIZE=16G for faster elaboration of big designs
 make u250-driver fpga PLATFORM=u250 PLATFORM_CONFIG=BaseF1Config1Mem_F50MHz TARGET_CONFIG=WithDefaultFireSimBridges_firesim.configs.WithDefaultMemModel_WithFireSimConfigTweaks_chipyard.MegaBoomConfig JAVA_HEAP_SIZE=16G
 ```
 
-# flash using script:
-```
-source /cluster/projects/itea_lille-ie-idi/env/xilinx.sh
-source /cluster/projects/itea_lille-ie-idi/env/xrt.sh
-source /cluster/projects/itea_lille-ie-idi/env/fpga-util.sh
-# allocate FPGA af
-fpga-util.py -a af
-# flash bitstream
-fpga-util.py -f af -b ~/git/chipyard/sims/firesim/sim/generated-src/u250/FireSim-FireSimRocketConfig-BaseF1Config1Mem/u250/vivado_proj/firesim.runs/impl_1/design_1_wrapper.bit
-
-# after you are done using the FPGA release it agian
-fpga-util.py -r af
-```
-
-# run FireSim
+# run FireSim on boards
 ```
 cd ~/git/chipyard
 source env.sh
