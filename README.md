@@ -1,3 +1,286 @@
+# allocating an FPGA node
+Should be run in screen on login node. Close the screen to end the allocation prematurely
+```
+# allocate a node exclusiveley for 1000 hours
+salloc --nodes=1 --exclusive --partition=CPUQ --reservation=fpga --account=ie-idi --time=1000:00:00
+```
+
+# git repos assumed to be in ~/git
+```
+cd ~/git
+```
+
+# install Xilinx XDMA driver - *only once per machine*
+```
+git clone https://github.com/Xilinx/dma_ip_drivers
+cd dma_ip_drivers/XDMA/linux-kernel/xdma/
+sudo make install
+sudo modprobe xdma
+modinfo xdma
+cd ~/git
+```
+
+# copy the u250 board files into vivado install (Xilinx/Vivado/2021.1/data/boards/board_files/au250) - *only once per machine* 
+# can be downloaded from the alveo lounge https://www.xilinx.com/member/alveo-vivado.html requires registration
+# the board files include an apache licenses
+
+# install the xilinx jtag driver (adjust path) - *only once per machine*
+cd Xilinx/Vivado/2021.1/data/xicom/cable_drivers/lin64/install_script/install_drivers
+sudo ./install_drivers
+
+# Chipyard dependencies for Centos 8 - *only once per machine*
+```
+sudo yum groupinstall -y "Development tools"
+sudo yum install -y gmp-devel mpfr-devel libmpc-devel zlib-devel vim git java java-devel
+
+# Install SBT https://www.scala-sbt.org/release/docs/Installing-sbt-on-Linux.html#Red+Hat+Enterprise+Linux+and+other+RPM-based+distributions
+# sudo rm -f /etc/yum.repos.d/bintray-rpm.repo
+# Use rm above if sbt installed from bintray before.
+curl -L https://www.scala-sbt.org/sbt-rpm.repo > sbt-rpm.repo
+sudo mv sbt-rpm.repo /etc/yum.repos.d/
+
+sudo yum install -y sbt texinfo
+sudo yum install -y expat-devel libusb1-devel ncurses-devel cmake "perl(ExtUtils::MakeMaker)"
+# deps for poky
+sudo yum install -y python38 patch diffstat texi2html texinfo subversion chrpath git wget
+# deps for qemu
+sudo yum install -y gtk3-devel
+# deps for firemarshal
+sudo yum install -y python38-pip python38-devel rsync libguestfs-tools expat ctags
+# install DTC
+sudo yum install -y dtc
+
+# FireMarshal
+sudo pip3 install psutil doit gitpython humanfriendly PyYAML
+# Set Python3.8 as default python version:
+alternatives --config python3
+alternatives --config python
+```
+
+## install verilator
+```
+git clone http://git.veripool.org/git/verilator
+cd verilator
+autoconf && ./configure && make -j$(nproc) && sudo make install
+cd ..
+```
+
+# clone and install Chipyard - *each user*
+```
+git clone https://github.com/ucb-bar/chipyard
+cd chipyard
+./scripts/init-submodules-no-riscv-tools.sh
+export MAKEFLAGS=-j20
+./scripts/build-toolchains.sh riscv-tools # for a normal risc-v toolchain
+source env.sh
+# install Firesim
+cd sims/firesim
+./build-setup.sh --library
+unset MAKEFLAGS
+source env.sh
+# try it out
+cd sim
+make run-verilator-debug  SIM_BINARY=~/git/chipyard/toolchains/riscv-tools/riscv-tests/build/benchmarks/dhrystone.riscv
+```
+
+## switch to NTNU firesim repo
+```
+cd ~/git/chipyard/sims/firesim/
+git remote rename origin upstream
+git remote add origin https://github.com/EECS-NTNU/firesim
+git checkout origin/u250
+```
+
+# build host driver (u250-driver) and bitstream (fpga) for design
+```
+source /cluster/projects/itea_lille-ie-idi/env/xilinx.sh
+source /cluster/projects/itea_lille-ie-idi/env/xrt.sh
+cd ~/git/chipyard
+source env.sh
+cd sims/firesim
+source env.sh
+cd sim
+make u250-driver fpga PLATFORM=u250 PLATFORM_CONFIG=BaseF1Config1Mem
+# add TARGET_CONFIG= to select a different design, PLATFORM_CONFIG=BaseF1Config1Mem_F50MHz for 50MHz clock and JAVA_HEAP_SIZE=16G for faster elaboration of big designs
+make u250-driver fpga PLATFORM=u250 PLATFORM_CONFIG=BaseF1Config1Mem_F50MHz TARGET_CONFIG=WithDefaultFireSimBridges_firesim.configs.WithDefaultMemModel_WithFireSimConfigTweaks_chipyard.MegaBoomConfig JAVA_HEAP_SIZE=16G
+```
+
+# flash using script:
+```
+source /cluster/projects/itea_lille-ie-idi/env/xilinx.sh
+source /cluster/projects/itea_lille-ie-idi/env/xrt.sh
+source /cluster/projects/itea_lille-ie-idi/env/fpga-util.sh
+# allocate FPGA af
+fpga-util.py -a af
+# flash bitstream
+fpga-util.py -f af -b ~/git/chipyard/sims/firesim/sim/generated-src/u250/FireSim-FireSimRocketConfig-BaseF1Config1Mem/u250/vivado_proj/firesim.runs/impl_1/design_1_wrapper.bit
+
+# after you are done using the FPGA release it agian
+fpga-util.py -r af
+```
+
+# run FireSim
+```
+cd ~/git/chipyard
+source env.sh
+cd sims/firesim
+source env.sh
+cd sim
+cd output/u250/FireSim-FireSimRocketConfig-BaseF1Config1Mem/
+# todo: provide sample image?
+# paths to binary and block device should be absolute
+# +slotid=af needs to be adjusted depending on the FPGA used.
+./FireSim-u250 +permissive +mm_relaxFunctionalModel_0=0 +mm_writeMaxReqs_0=10 +mm_readMaxReqs_0=10 +mm_writeLatency_0=30 +mm_readLatency_0=30 +slotid=af +blkdev0=/cluster/home/davidcme/firesim_images/br-base.img +permissive-off /cluster/home/davidcme/firesim_images/br-base-bin
+# after finishing the simulation the terminal will behave strange and needs to be reset
+reset
+# the bitstream needs to be re-flashed before firesim can be run again
+```
+
+# Appendix:
+## reboot
+```
+cd /
+sudo umount /cluster
+sudo lustre_rmmod
+sudo reboot
+```
+
+## after reboot
+wait until node is up again using ping/sinfo from login node
+```
+sudo modprobe xdma
+sudo chmod 666 /sys/bus/pci/devices/0000\:af\:00.0/resource0
+sudo chmod 666 /sys/bus/pci/devices/0000\:d8\:00.0/resource0
+sudo chmod 666 /dev/xdma*
+```
+
+## returning to XRT (theory so far)
+* Might not be necessary because only the in-FPGA bitstream but not the ROM are changed (cold reboot should be enough)
+* https://support.xilinx.com/s/article/71757?language=en_US
+
+## server/pcie-id/device-id mapping
+|  server  | pcie-id |  jtag-id   |
+|----------|:-------:|------------|
+|idun-06-05|    d8   |213304099003|
+|idun-06-05|    af   |21330409B00K|
+|idun-06-06|    d8   |21330409F03L|
+|idun-06-06|    af   |21330409F028|
+```
+[davidcme@idun-06-05 git]$ sudo /opt/xilinx/xrt/bin/xbmgmt examine -d 0000:d8:00.0
+
+--------------------------------------------------------
+1/1 [0000:d8:00.0] : xilinx_u250_gen3x16_xdma_shell_3_1
+--------------------------------------------------------
+Flash properties
+  Type                 : spi
+  Serial Number        : 213304099003
+```
+
+```
+[davidcme@idun-06-05 git]$ sudo /opt/xilinx/xrt/bin/xbmgmt examine -d 0000:af:00.0
+
+--------------------------------------------------------
+1/1 [0000:af:00.0] : xilinx_u250_gen3x16_xdma_shell_3_1
+--------------------------------------------------------
+Flash properties
+  Type                 : spi
+  Serial Number        : 21330409B00K
+```
+
+```
+[davidcme@idun-06-06 ~]$ sudo /opt/xilinx/xrt/bin/xbmgmt examine -d 0000:d8:00.0
+
+--------------------------------------------------------
+1/1 [0000:d8:00.0] : xilinx_u250_gen3x16_xdma_shell_3_1
+--------------------------------------------------------
+Flash properties
+  Type                 : spi
+  Serial Number        : 21330409F03L
+```
+
+```
+[davidcme@idun-06-06 ~]$ sudo /opt/xilinx/xrt/bin/xbmgmt examine -d 0000:af:00.0
+
+--------------------------------------------------------
+1/1 [0000:af:00.0] : xilinx_u250_gen3x16_xdma_shell_3_1
+--------------------------------------------------------
+Flash properties
+  Type                 : spi
+  Serial Number        : 21330409F028
+```
+## clean sbt (Helpful if something breaks)
+```
+cd ~/git/chipyard/
+rm -rf ~/.ivy2/cache
+rm -rf ~/.sbt
+# sbt clean (adjust paths)
+java -Xmx8G -Xss8M -XX:MaxPermSize=256M -Djava.io.tmpdir=/cluster/home/davidcme/git/chipyard/.java_tmp -jar /cluster/home/davidcme/git/chipyard/generators/rocket-chip/sbt-launch.jar -Dsbt.sourcemode=true -Dsbt.workspace=/cluster/home/davidcme/git/chipyard/tools -Dscala.concurrent.context.maxThreads=1 clean
+```
+
+
+
+## flash bitstream (without script)
+### when switching from xilinx xrt shell for card with pcie id af:
+* might always require hard reboot because of BAR config change https://stackoverflow.com/a/64254086
+```
+# unload xilinx driver
+sudo rmmod xclmgmt
+sudo rmmod xocl
+# remove second physical function (.1)
+# adjust af to pcie id
+echo 1 | sudo tee /sys/bus/pci/devices/0000\:af\:00.1/remove > /dev/null
+```
+
+### terminal 1 - hw_server (runs as root because it needs permissions to access the usb-jtag devices)
+```
+sudo /cluster/projects/itea_lille-ie-idi/opt/Xilinx/Vivado/2021.1/bin/hw_server
+```
+### terminal 2 - xilinx pcie reset script + chmod
+```
+# adjust af to pcie id
+/cluster/projects/itea_lille-ie-idi/env/reset_pcie_device.sh af:00.0
+```
+don't press c until things in terminal 3 are completed.
+```
+# allow non-root access to pcie bar and xdma (needs to be done after flashing)
+# adjust af to pcie id
+sudo chmod 666 /sys/bus/pci/devices/0000\:af\:00.0/resource0
+sudo chmod 666 /dev/xdma*
+```
+
+### terminal 3 - vivado
+```
+source /cluster/projects/itea_lille-ie-idi/env/xilinx.sh
+source /cluster/projects/itea_lille-ie-idi/env/xrt.sh
+vivado
+```
+either in gui open the project ~/git/chipyard/sims/firesim/sim/generated-src/u250/FireSim-FireSimRocketConfig-BaseF1Config1Mem/u250/vivado_proj/firesim.xpr
+* click Open Hardware Manager
+* click Open Target
+* select device with correct id (based on mapping in appendix) and program
+  or in vivado tcl console (adjust project and target):
+```
+open_project ~/git/chipyard/sims/firesim/sim/generated-src/u250/FireSim-FireSimRocketConfig-BaseF1Config1Mem/u250/vivado_proj/firesim.xpr
+open_hw_manager
+connect_hw_server -url localhost:3121 -allow_non_jtag
+# change ID to id from mapping in appendix + A
+open_hw_target {localhost:3121/xilinx_tcf/Xilinx/21330409F028A}
+current_hw_device [get_hw_devices xcu250_0_1]
+refresh_hw_device -update_hw_probes false [lindex [get_hw_devices xcu250_0_1] 0]
+set_property PROBES.FILE {~/git/chipyard/sims/firesim/sim/generated-src/u250/FireSim-FireSimRocketConfig-BaseF1Config1Mem/u250/vivado_proj/firesim.runs/impl_1/design_1_wrapper.ltx} [get_hw_devices xcu250_0]
+set_property FULL_PROBES.FILE {~/git/chipyard/sims/firesim/sim/generated-src/u250/FireSim-FireSimRocketConfig-BaseF1Config1Mem/u250/vivado_proj/firesim.runs/impl_1/design_1_wrapper.ltx} [get_hw_devices xcu250_0]
+set_property PROGRAM.FILE {~/git/chipyard/sims/firesim/sim/generated-src/u250/FireSim-FireSimRocketConfig-BaseF1Config1Mem/u250/vivado_proj/firesim.runs/impl_1/design_1_wrapper.bit} [get_hw_devices xcu250_0]
+program_hw_devices [get_hw_devices xcu250_0]
+refresh_hw_device [lindex [get_hw_devices xcu250_0] 0]
+```
+
+# TODO:
+* riscv-tools and verilator shared?
+* locale?
+* non-sudo flashing?%    
+
+
+
 ![CHIPYARD](https://github.com/ucb-bar/chipyard/raw/master/docs/_static/images/chipyard-logo-full.png)
 
 # Chipyard Framework [![Test](https://github.com/ucb-bar/chipyard/workflows/chipyard-ci-process/badge.svg?style=svg)](https://github.com/ucb-bar/chipyard/actions)
